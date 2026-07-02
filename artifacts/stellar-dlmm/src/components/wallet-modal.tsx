@@ -249,8 +249,7 @@ function SelectWalletView({
   onConnect: (w: WalletType) => void;
 }) {
   const [selected, setSelected] = useState<WalletType | null>(null);
-  const freighterInstalled =
-    typeof window !== "undefined" && !!window.freighter;
+  const freighterInstalled = wallet.isFreighterInstalled;
 
   return (
     <>
