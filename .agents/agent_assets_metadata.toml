@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "xYGaBe45NFlSuAlCvWuBr"
+uri = "file://SMART_CONTRACT_GUIDE.md"
+type = "text"
+title = "Panduan Integrasi Smart Contract — Stellar DLMM"
