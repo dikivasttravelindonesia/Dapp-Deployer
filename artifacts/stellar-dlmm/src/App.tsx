@@ -1,19 +1,23 @@
+import { useState } from "react";
 import { Switch, Route, Router as WouterRouter, Link, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Activity, BarChart3, LayoutDashboard, Settings, ArrowLeftRight, Wallet } from "lucide-react";
+import { Activity, BarChart3, LayoutDashboard, ArrowLeftRight } from "lucide-react";
 import NotFound from "@/pages/not-found";
 import SwapPage from "@/pages/swap";
 import PoolsPage from "@/pages/pools";
 import PoolDetailPage from "@/pages/pool-detail";
 import PositionsPage from "@/pages/positions";
 import AnalyticsPage from "@/pages/analytics";
+import { WalletProvider } from "@/contexts/wallet";
+import { WalletModal, SidebarWalletButton } from "@/components/wallet-modal";
 
 const queryClient = new QueryClient();
 
 function Sidebar() {
   const [location] = useLocation();
+  const [walletOpen, setWalletOpen] = useState(false);
 
   const navItems = [
     { href: "/swap", label: "Swap", icon: ArrowLeftRight },
@@ -23,34 +27,44 @@ function Sidebar() {
   ];
 
   return (
-    <div className="w-64 border-r border-border bg-card flex flex-col h-[100dvh] sticky top-0">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <div className="w-4 h-4 rounded-full border-2 border-primary-foreground" />
+    <>
+      <div className="w-64 border-r border-border bg-card flex flex-col h-[100dvh] sticky top-0">
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <div className="w-4 h-4 rounded-full border-2 border-primary-foreground" />
+          </div>
+          <span className="font-bold text-xl tracking-tight">Stellar DLMM</span>
         </div>
-        <span className="font-bold text-xl tracking-tight">Stellar DLMM</span>
-      </div>
-      
-      <nav className="flex-1 px-4 py-2 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.startsWith(item.href);
-          return (
-            <Link key={item.href} href={item.href} className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-              <Icon className="w-5 h-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
 
-      <div className="p-4 border-t border-border">
-        <button className="w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 py-2.5 rounded-md font-medium transition-colors">
-          <Wallet className="w-4 h-4" />
-          Connect Wallet
-        </button>
+        <nav className="flex-1 px-4 py-2 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+                data-testid={`link-nav-${item.label.toLowerCase()}`}
+              >
+                <Icon className="w-5 h-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-border">
+          <SidebarWalletButton onOpen={() => setWalletOpen(true)} />
+        </div>
       </div>
-    </div>
+
+      <WalletModal open={walletOpen} onOpenChange={setWalletOpen} />
+    </>
   );
 }
 
@@ -91,10 +105,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
+        <WalletProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </WalletProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

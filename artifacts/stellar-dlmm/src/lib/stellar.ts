@@ -12,8 +12,7 @@ import {
   Address,
   Contract,
   Networks,
-  Operation,
-  SorobanRpc,
+  rpc,
   Transaction,
   TransactionBuilder,
   nativeToScVal,
@@ -46,9 +45,9 @@ export const NETWORK_CONFIG: Record<
 // RPC client factory
 // ---------------------------------------------------------------------------
 
-export function createRpcServer(network: NetworkId): SorobanRpc.Server {
+export function createRpcServer(network: NetworkId): rpc.Server {
   const { rpcUrl } = NETWORK_CONFIG[network];
-  return new SorobanRpc.Server(rpcUrl, { allowHttp: false });
+  return new rpc.Server(rpcUrl, { allowHttp: false });
 }
 
 // ---------------------------------------------------------------------------
@@ -120,8 +119,8 @@ export async function buildContractInvocation(
   const { callerAddress, contractId, functionName, args, network } = params;
   const { networkPassphrase } = NETWORK_CONFIG[network];
 
-  const rpc = createRpcServer(network);
-  const account = await rpc.getAccount(callerAddress);
+  const rpcServer = createRpcServer(network);
+  const account = await rpcServer.getAccount(callerAddress);
 
   const contract = new Contract(contractId);
 
@@ -145,10 +144,10 @@ export async function simulateAndDecode<T = unknown>(
   tx: Transaction,
   network: NetworkId
 ): Promise<T | null> {
-  const rpc = createRpcServer(network);
-  const sim = await rpc.simulateTransaction(tx);
+  const rpcServer = createRpcServer(network);
+  const sim = await rpcServer.simulateTransaction(tx);
 
-  if (SorobanRpc.Api.isSimulationError(sim)) {
+  if (rpc.Api.isSimulationError(sim)) {
     console.error("[stellar] simulation error:", sim.error);
     return null;
   }
