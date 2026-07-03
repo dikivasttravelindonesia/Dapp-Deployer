@@ -108,7 +108,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Connected view
+// Sub-views
 // ---------------------------------------------------------------------------
 
 function ConnectedView({
@@ -124,110 +124,61 @@ function ConnectedView({
   onRefresh: () => void;
   onDisconnect: () => void;
 }) {
-  const explorerUrl =
-    wallet.network === "testnet"
-      ? `https://stellar.expert/explorer/testnet/account/${wallet.address}`
-      : `https://stellar.expert/explorer/public/account/${wallet.address}`;
-
   return (
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-green-400" />
-          Connected
+          <div className="w-2 h-2 rounded-full bg-green-400" />
+          Wallet Connected
         </DialogTitle>
       </DialogHeader>
 
       <div className="space-y-4 mt-2">
-        {/* Address card */}
-        <div className="bg-secondary/60 rounded-lg p-4 space-y-1">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Address</p>
-          <div className="flex items-center gap-2 font-mono text-sm break-all">
-            <span data-testid="text-wallet-address">{wallet.address}</span>
+        <div className="flex items-center justify-between bg-secondary/60 border border-border rounded-lg p-3">
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5 capitalize">{wallet.walletType}</p>
+            <p className="font-mono text-sm font-medium">{wallet.shortAddress}</p>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-muted-foreground hover:text-foreground"
-              onClick={onCopy}
-              data-testid="button-copy-address"
-            >
-              <Copy className="w-3 h-3 mr-1" /> Copy
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCopy} data-testid="button-copy-address">
+              <Copy className="w-4 h-4" />
             </Button>
             <a
-              href={explorerUrl}
+              href={`https://stellar.expert/explorer/testnet/account/${wallet.address}`}
               target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-sm hover:bg-muted transition-colors"
-              data-testid="link-explorer"
+              rel="noreferrer"
             >
-              <ExternalLink className="w-3 h-3" /> Explorer
+              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-explorer-link">
+                <ExternalLink className="w-4 h-4" />
+              </Button>
             </a>
-            <span className="ml-auto text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-sm font-medium capitalize">
-              {wallet.walletType}
-            </span>
-            <span className="text-xs bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded-sm font-medium">
-              {wallet.network}
-            </span>
           </div>
         </div>
 
-        {/* Balances */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Balances</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-muted-foreground"
-              onClick={onRefresh}
-              disabled={refreshing}
-              data-testid="button-refresh-balance"
-            >
-              <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+            <p className="text-sm font-medium">Balances</p>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRefresh} data-testid="button-refresh-balance">
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
           </div>
-
-          <div
-            className="bg-secondary/60 rounded-lg divide-y divide-border"
-            data-testid="wallet-balances"
-          >
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-xs">★</div>
-                <span className="font-medium">XLM</span>
-              </div>
-              <span className="font-mono tabular-nums" data-testid="text-xlm-balance">
-                {wallet.xlmBalance ?? "—"}
-              </span>
-            </div>
-
-            {wallet.tokenBalances.map((tb) => (
-              <div key={tb.asset} className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">
-                    {tb.asset[0]}
-                  </div>
-                  <span className="font-medium">{tb.asset}</span>
-                </div>
-                <span className="font-mono tabular-nums">{tb.balance}</span>
-              </div>
-            ))}
-
-            {wallet.tokenBalances.length === 0 && (
-              <div className="px-4 py-3 text-xs text-muted-foreground">
-                No custom asset balances found on this account.
-              </div>
-            )}
+          <div className="flex items-center justify-between px-3 py-2 rounded-md bg-secondary/40">
+            <span className="text-sm font-medium">XLM</span>
+            <span className="font-mono text-sm tabular-nums">{wallet.xlmBalance ?? "—"}</span>
           </div>
+          {wallet.tokenBalances.map((t) => (
+            <div key={t.asset} className="flex items-center justify-between px-3 py-2 rounded-md bg-secondary/40">
+              <span className="text-sm font-medium">{t.asset}</span>
+              <span className="font-mono text-sm tabular-nums">{parseFloat(t.balance).toFixed(4)}</span>
+            </div>
+          ))}
         </div>
 
         <Button
           variant="outline"
-          className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
+          className="w-full text-destructive hover:text-destructive"
           onClick={onDisconnect}
-          data-testid="button-disconnect"
+          data-testid="button-disconnect-wallet"
         >
           <LogOut className="w-4 h-4 mr-2" />
           Disconnect
@@ -236,10 +187,6 @@ function ConnectedView({
     </>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Select wallet view
-// ---------------------------------------------------------------------------
 
 function SelectWalletView({
   wallet,
@@ -274,60 +221,37 @@ function SelectWalletView({
         {WALLETS.map((w) => {
           const isFreighter = w.id === "freighter";
           const notInstalled = isFreighter && !freighterInstalled;
-          const isLoading = wallet.connecting && selected === w.id;
+          const isConnecting = wallet.connecting && selected === w.id;
 
           return (
             <button
               key={w.id}
-              data-testid={`button-connect-${w.id}`}
-              className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-all text-left
-                ${notInstalled
-                  ? "border-border opacity-60 cursor-default"
-                  : "border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer"
-                }`}
               onClick={() => {
-                if (notInstalled) return;
                 setSelected(w.id);
                 onConnect(w.id);
               }}
-              disabled={wallet.connecting || notInstalled}
+              disabled={wallet.connecting}
+              className="w-full flex items-center gap-4 p-4 rounded-lg border border-border bg-secondary/40 hover:bg-secondary/70 hover:border-primary/40 transition-colors text-left disabled:opacity-60"
+              data-testid={`button-connect-${w.id}`}
             >
-              <span className="text-2xl w-8 text-center">{w.icon}</span>
-
+              <span className="text-2xl">{w.icon}</span>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{w.name}</span>
-                  {isFreighter && (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-sm font-medium ${
-                        freighterInstalled
-                          ? "bg-green-500/15 text-green-400"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {freighterInstalled ? "Detected" : "Not installed"}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{w.description}</p>
-                {notInstalled && w.installUrl && (
-                  <a
-                    href={w.installUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Install Freighter <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+                <p className="font-semibold flex items-center gap-2">{w.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{w.description}</p>
               </div>
-
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              ) : (
-                <div className="w-5 h-5 rounded-full border-2 border-border group-hover:border-primary" />
-              )}
+              {isConnecting ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground shrink-0" />
+              ) : isFreighter ? (
+                <span
+                  className={`text-xs px-2 py-1 rounded-full shrink-0 ${
+                    freighterInstalled
+                      ? "bg-green-500/15 text-green-400"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {freighterInstalled ? "Detected" : "Not installed"}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -385,6 +309,56 @@ export function SidebarWalletButton({ onOpen }: { onOpen: () => void }) {
     >
       <Wallet className="w-4 h-4" />
       Connect Wallet
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Header wallet button — compact pill for the top navbar (desktop + mobile)
+// ---------------------------------------------------------------------------
+
+export function HeaderWalletButton({ onOpen }: { onOpen: () => void }) {
+  const { connected, shortAddress, xlmBalance, connecting } = useWallet();
+
+  if (connecting) {
+    return (
+      <button
+        className="flex items-center gap-2 bg-secondary text-secondary-foreground px-3 sm:px-4 h-9 rounded-full font-medium text-sm opacity-70"
+        disabled
+        data-testid="button-wallet-connecting"
+      >
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span className="hidden sm:inline">Connecting…</span>
+      </button>
+    );
+  }
+
+  if (connected) {
+    return (
+      <button
+        onClick={onOpen}
+        className="flex items-center gap-2 bg-secondary/70 hover:bg-secondary border border-border px-3 sm:px-4 h-9 rounded-full transition-colors"
+        data-testid="button-wallet-connected"
+      >
+        <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+        <span className="font-mono text-xs sm:text-sm font-medium">{shortAddress}</span>
+        {xlmBalance !== null && (
+          <span className="hidden sm:inline text-xs text-muted-foreground font-mono border-l border-border pl-2 ml-0.5">
+            {xlmBalance} XLM
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onOpen}
+      className="flex items-center gap-1.5 sm:gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-3 sm:px-4 h-9 rounded-full font-semibold text-sm transition-colors whitespace-nowrap"
+      data-testid="button-connect-wallet"
+    >
+      <Wallet className="w-4 h-4" />
+      <span>Connect</span>
     </button>
   );
 }

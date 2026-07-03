@@ -41,15 +41,15 @@ export default function PositionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Your Positions</h1>
-          <p className="text-muted-foreground mt-1">Manage your DLMM liquidity positions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Your Positions</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage your DLMM liquidity positions</p>
         </div>
         {wallet.connected ? (
           <button
             onClick={() => setWalletModalOpen(true)}
-            className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 border border-border px-3 py-2 rounded-md text-sm transition-colors"
+            className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 border border-border px-3 py-2 rounded-md text-sm transition-colors self-start"
             data-testid="button-wallet-address"
           >
             <div className="w-2 h-2 rounded-full bg-green-400" />
@@ -59,7 +59,7 @@ export default function PositionsPage() {
             )}
           </button>
         ) : (
-          <Button onClick={() => setWalletModalOpen(true)} data-testid="button-connect-positions">
+          <Button onClick={() => setWalletModalOpen(true)} className="self-start" data-testid="button-connect-positions">
             <Wallet className="w-4 h-4 mr-2" />
             Connect Wallet
           </Button>
