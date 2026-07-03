@@ -259,7 +259,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           xdr,
           network: network === "testnet" ? "testnet" : "public",
           pubkey: address,
-          description: "Stellar DLMM transaction",
+          description: "StellarBin transaction",
         });
         return res.signed_envelope_xdr;
       }

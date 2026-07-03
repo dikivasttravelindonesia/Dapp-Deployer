@@ -1,4 +1,4 @@
-# Stellar DLMM — Decentralized Liquidity Protocol
+# StellarBin — Decentralized Liquidity Protocol
 
 A full-stack DeFi boilerplate for a Dynamic Liquidity Market Maker (DLMM) on the Stellar network, inspired by Meteora on Solana.
 

@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Stellar DLMM — Liquidity Protocol"
+title = "StellarBin — Liquidity Protocol"
 version = "1.0.0"
 id = "artifacts/stellar-dlmm"
 router = "path"

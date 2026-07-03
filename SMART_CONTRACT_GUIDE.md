@@ -1,4 +1,4 @@
-# Stellar DLMM — Panduan Integrasi Smart Contract
+# StellarBin — Panduan Integrasi Smart Contract
 
 Panduan lengkap mulai dari instalasi dependensi Rust/Soroban, kompilasi kontrak, deploy ke setiap jaringan, hingga integrasi ke frontend DApp.
 

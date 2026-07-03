@@ -29,7 +29,7 @@ function Logo() {
       <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
         <div className="w-4 h-4 rounded-full border-2 border-primary-foreground" />
       </div>
-      <span className="font-bold text-lg tracking-tight whitespace-nowrap">Stellar DLMM</span>
+      <span className="font-bold text-lg tracking-tight whitespace-nowrap">StellarBin</span>
     </Link>
   );
 }

@@ -1,1 +1,2 @@
 - [Starting an artifact workflow that has none configured](artifact-workflow-bootstrap.md) — pull PORT/BASE_PATH from artifact.toml `[services.env]`, inline them in the configureWorkflow command, and kill stale processes if the port is already bound.
+- [Protocol-wide historical charts](stellar-dlmm-protocol-history.md) — aggregate per-pool getPoolStats client calls when no protocol-history endpoint exists
