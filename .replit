@@ -9,28 +9,6 @@ args = ["pnpm", "store", "prune"]
 env = { "CI" = "true" }
 
 [workflows]
-runButton = "Project"
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Stellar DLMM"
-
-[[workflows.workflow]]
-name = "Stellar DLMM"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=20441 BASE_PATH=/ pnpm --filter @workspace/stellar-dlmm run dev"
-waitForPort = 20441
 
 [agent]
 stack = "PNPM_WORKSPACE"
