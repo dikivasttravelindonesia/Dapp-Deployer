@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useGetProtocolSummary, useListTransactions, useListPools, getPoolStats } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,14 @@ interface HistoryPoint {
   volume: number;
   fees: number;
 }
+
+const TIME_RANGES = [
+  { label: "7D", days: 7 },
+  { label: "30D", days: 30 },
+  { label: "All", days: null },
+] as const;
+
+type TimeRangeLabel = (typeof TIME_RANGES)[number]["label"];
 
 function useProtocolHistory(poolIds: string[] | undefined) {
   return useQuery({
@@ -42,10 +51,18 @@ export default function AnalyticsPage() {
   const { data: pools, isLoading: poolsLoading } = useListPools({});
   const poolIds = pools?.map((p) => p.id);
   const { data: history, isLoading: historyLoading } = useProtocolHistory(poolIds);
+  const [range, setRange] = useState<TimeRangeLabel>("30D");
 
   const loadingCharts = poolsLoading || historyLoading;
   const tvlChange = summary?.tvlChange24h ?? 0;
   const volumeChange = summary?.volumeChange24h ?? 0;
+
+  const filteredHistory = useMemo(() => {
+    if (!history) return history;
+    const days = TIME_RANGES.find((r) => r.label === range)?.days;
+    if (days == null) return history;
+    return history.slice(-days);
+  }, [history, range]);
 
   return (
     <div className="space-y-6">
@@ -80,15 +97,32 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
+      <div className="flex items-center justify-end">
+        <div className="inline-flex items-center rounded-lg border border-border bg-card p-1 gap-1">
+          {TIME_RANGES.map((r) => (
+            <button
+              key={r.label}
+              onClick={() => setRange(r.label)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                range === r.label ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid={`button-range-${r.label.toLowerCase()}`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6 bg-card border-border">
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">TVL Over Time</h3>
           <div className="h-[280px] w-full">
             {loadingCharts ? (
               <Skeleton className="w-full h-full" />
-            ) : history && history.length > 0 ? (
+            ) : filteredHistory && filteredHistory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history}>
+                <AreaChart data={filteredHistory}>
                   <defs>
                     <linearGradient id="tvlGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
@@ -130,9 +164,9 @@ export default function AnalyticsPage() {
           <div className="h-[280px] w-full">
             {loadingCharts ? (
               <Skeleton className="w-full h-full" />
-            ) : history && history.length > 0 ? (
+            ) : filteredHistory && filteredHistory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history}>
+                <AreaChart data={filteredHistory}>
                   <defs>
                     <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.35} />
