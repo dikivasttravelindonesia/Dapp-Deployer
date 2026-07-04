@@ -1,0 +1,28 @@
+error: rustc interrupted by SIGSEGV, printing backtrace
+
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x3bf740c)[0x7fc5735f740c]
+/lib/x86_64-linux-gnu/libc.so.6(+0x45330)[0x7fc56f833330]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x89139d2)[0x7fc56d9139d2]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x890aa8b)[0x7fc56d90aa8b]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm16computeKnownBitsEPKNS_5ValueERNS_9KnownBitsERKNS_13SimplifyQueryEj+0xf2)[0x7fc56d908572]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x8905858)[0x7fc56d905858]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x8905174)[0x7fc56d905174]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm19simplifyInstructionEPNS_11InstructionERKNS_13SimplifyQueryE+0x1a8e)[0x7fc56d883e4e]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm25CloneAndPruneIntoFromInstEPNS_8FunctionEPKS0_PKNS_11InstructionERNS_8ValueMapIPKNS_5ValueENS_14WeakTrackingVHENS_14ValueMapConfigISA_NS_3sys10SmartMutexILb0EEEEEEEbRNS_15SmallVectorImplIPNS_10ReturnInstEEEPKcPNS_14ClonedCodeInfoE+0x7f4)[0x7fc56d884b86]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm18InlineFunctionImplERNS_8CallBaseERNS_18InlineFunctionInfoEbPNS_9AAResultsEbPNS_8FunctionEPNS_25OptimizationRemarkEmitterE+0xbb8)[0x7fc56d92c3d0]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm14InlineFunctionERNS_8CallBaseERNS_18InlineFunctionInfoEbPNS_9AAResultsEbPNS_8FunctionEPNS_25OptimizationRemarkEmitterE+0x1af)[0x7fc56de373ef]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x8e36da1)[0x7fc56de36da1]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x8e349d2)[0x7fc56de349d2]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm11PassManagerINS_6ModuleENS_15AnalysisManagerIS1_JEEEJEE3runERS1_RS3_+0x1ef)[0x7fc56d94ca2f]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x624c51c)[0x7fc575c4c51c]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x623f59a)[0x7fc575c3f59a]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(_RNvXs1_CsdUWQPj1M6pQ_18rustc_codegen_llvmNtB5_18LlvmCodegenBackendNtNtNtCskR6B7ZMDWD5_17rustc_codegen_ssa6traits5write19WriteBackendMethods8optimize+0x336)[0x7fc575c449d0]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(_RINvNtNtCs3JBboNF8E1m_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCskR6B7ZMDWD5_17rustc_codegen_ssa4back5write10spawn_workNtCsdUWQPj1M6pQ_18rustc_codegen_llvm18LlvmCodegenBackendE0uEB2c_+0x150)[0x7fc575d88f52]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x6388b68)[0x7fc575d88b68]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x638c6ac)[0x7fc575d8c6ac]
+/lib/x86_64-linux-gnu/libc.so.6(+0x9caa4)[0x7fc56f88aaa4]
+/lib/x86_64-linux-gnu/libc.so.6(__clone+0x44)[0x7fc56f917a64]
+
+note: we would appreciate a report at https://github.com/rust-lang/rust
+help: you can increase rustc's stack size by setting RUST_MIN_STACK=16777216
+note: backtrace dumped due to SIGSEGV! resuming signal

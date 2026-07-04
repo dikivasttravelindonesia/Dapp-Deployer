@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRoute } from "wouter";
 import { useGetPool, useGetPoolBins, useGetPoolStats, getGetPoolQueryKey, getGetPoolBinsQueryKey, getGetPoolStatsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,13 +7,16 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { DLMM_CONTRACT_ID } from "@/lib/contracts";
+import { LiquidityModal } from "@/components/liquidity-modal";
 
 export default function PoolDetailPage() {
   const [, params] = useRoute("/pools/:poolId");
   const poolId = params?.poolId || "";
+  const [liquidityModal, setLiquidityModal] = useState<"add" | "remove" | null>(null);
 
   const { data: pool, isLoading: poolLoading } = useGetPool(poolId, { query: { enabled: !!poolId, queryKey: getGetPoolQueryKey(poolId) } });
-  const { data: bins, isLoading: binsLoading } = useGetPoolBins(poolId, { query: { enabled: !!poolId, queryKey: getGetPoolBinsQueryKey(poolId) } });
+  const { data: bins, isLoading: binsLoading, refetch: refetchBins } = useGetPoolBins(poolId, { query: { enabled: !!poolId, queryKey: getGetPoolBinsQueryKey(poolId) } });
   const { data: stats, isLoading: statsLoading } = useGetPoolStats(poolId, { query: { enabled: !!poolId, queryKey: getGetPoolStatsQueryKey(poolId) } });
 
   if (poolLoading) {
@@ -20,6 +24,8 @@ export default function PoolDetailPage() {
   }
 
   if (!pool) return <div>Pool not found</div>;
+
+  const isLivePool = pool.contractAddress === DLMM_CONTRACT_ID;
 
   return (
     <div className="space-y-6">
@@ -40,10 +46,29 @@ export default function PoolDetailPage() {
           <div className="text-xl font-mono">1 {pool.tokenX.symbol} = {pool.currentPrice} {pool.tokenY.symbol}</div>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">Remove Liquidity</Button>
-          <Button>Add Liquidity</Button>
+          <Button
+            variant="outline"
+            disabled={!isLivePool}
+            onClick={() => setLiquidityModal("remove")}
+            data-testid="button-remove-liquidity"
+          >
+            Remove Liquidity
+          </Button>
+          <Button
+            disabled={!isLivePool}
+            onClick={() => setLiquidityModal("add")}
+            data-testid="button-add-liquidity"
+          >
+            Add Liquidity
+          </Button>
         </div>
       </div>
+
+      {!isLivePool && (
+        <div className="text-xs text-muted-foreground bg-secondary/30 border border-border rounded-md px-3 py-2">
+          This pool's data is illustrative. Real on-chain liquidity actions are only wired to the live testnet pool (XLM/TESTUSD).
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-card border-border">
@@ -88,6 +113,18 @@ export default function PoolDetailPage() {
           <Button variant="secondary" className="flex-1">Bid-Ask Strategy</Button>
         </div>
       </Card>
+
+      {isLivePool && liquidityModal && (
+        <LiquidityModal
+          open={!!liquidityModal}
+          onOpenChange={(o) => setLiquidityModal(o ? liquidityModal : null)}
+          mode={liquidityModal}
+          binId={pool.activeBinId}
+          tokenXSymbol={pool.tokenX.symbol}
+          tokenYSymbol={pool.tokenY.symbol}
+          onSuccess={() => refetchBins()}
+        />
+      )}
     </div>
   );
 }

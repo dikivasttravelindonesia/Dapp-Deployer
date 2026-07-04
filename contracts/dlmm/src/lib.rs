@@ -31,9 +31,9 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, token, vec, Address, Env, Symbol, Vec,
+    contract, contractimpl, contracttype, symbol_short, token, Address, Env, Symbol,
 };
-use stellar_dlmm_math::{bin_price, compute_x_from_y, compute_y_from_x, dynamic_fee, SCALAR};
+use stellar_dlmm_math::{bin_price, compute_x_from_y, compute_y_from_x, dynamic_fee};
 
 // ---------------------------------------------------------------------------
 // Data types

@@ -11,9 +11,26 @@ import { TOKENS } from "./tokens";
 
 const router = Router();
 
-const [XLM, USDC, yXLM, BTC, ETH, AQUA] = TOKENS;
+const [XLM, USDC, yXLM, BTC, ETH, AQUA, TESTUSD] = TOKENS;
 
 export const POOLS = [
+  {
+    id: "pool-xlm-testusd-live",
+    tokenX: XLM,
+    tokenY: TESTUSD,
+    tvl: 2.0,
+    volume24h: 0.1,
+    fees24h: 0.00005,
+    apr: 5.0,
+    binStep: 10,
+    activeBinId: 0,
+    currentPrice: 1.001,
+    fee: 0.0005,
+    reserveX: 10,
+    reserveY: 9.0005,
+    totalBins: 1,
+    contractAddress: "CCTX4QBFZHMJLQSLWEN73553DQMOKFZADZQM2G2E7WBPFR4ITPVOKG4X",
+  },
   {
     id: "pool-xlm-usdc-001",
     tokenX: XLM,

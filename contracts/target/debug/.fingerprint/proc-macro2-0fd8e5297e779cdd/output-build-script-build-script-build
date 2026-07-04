@@ -1,0 +1,20 @@
+error: rustc interrupted by SIGSEGV, printing backtrace
+
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x399a39f)[0x7f2a2d59a39f]
+/lib/x86_64-linux-gnu/libc.so.6(+0x45330)[0x7f2a29a33330]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.20.1-rust-1.88.0-stable(+0x81cf6de)[0x7f2a27fcf6de]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.20.1-rust-1.88.0-stable(_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE+0xb2d)[0x7f2a27c2f8f9]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.20.1-rust-1.88.0-stable(_ZN4llvm13FPPassManager11runOnModuleERNS_6ModuleE+0x2f)[0x7f2a27c2ed2f]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.20.1-rust-1.88.0-stable(_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE+0x2d9)[0x7f2a2825366d]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x5f93582)[0x7f2a2fb93582]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x5f930e1)[0x7f2a2fb930e1]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x5f906a6)[0x7f2a2fb906a6]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x5f90374)[0x7f2a2fb90374]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(_RINvNtNtCs21ZxWzNybR_3std3sys9backtrace28___rust_begin_short_backtraceNCINvXs0_Cs5qZgrafjsDf_18rustc_codegen_llvmNtB1f_18LlvmCodegenBackendNtNtNtCs12088aoQfPh_17rustc_codegen_ssa6traits7backend19ExtraBackendMethods18spawn_named_threadNCINvNtNtB2j_4back5write10spawn_workB1N_E0uE0uEB1f_+0x251)[0x7f2a2fb8ead1]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x60b671c)[0x7f2a2fcb671c]
+/home/runner/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/lib/librustc_driver-277627f6f3b9f29c.so(+0x60b6aab)[0x7f2a2fcb6aab]
+/lib/x86_64-linux-gnu/libc.so.6(+0x9caa4)[0x7f2a29a8aaa4]
+/lib/x86_64-linux-gnu/libc.so.6(__clone+0x44)[0x7f2a29b17a64]
+
+note: we would appreciate a report at https://github.com/rust-lang/rust
+help: you can increase rustc's stack size by setting RUST_MIN_STACK=16777216

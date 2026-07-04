@@ -1,0 +1,25 @@
+error: rustc interrupted by SIGSEGV, printing backtrace
+
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x3bf740c)[0x7fabe27f740c]
+/lib/x86_64-linux-gnu/libc.so.6(+0x45330)[0x7fabdea33330]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(+0x88f1391)[0x7fabdcaf1391]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm12SelectionDAG9getMemcpyENS_7SDValueERKNS_5SDLocES1_S1_S1_NS_5AlignEbbPKNS_8CallInstESt8optionalIbENS_18MachinePointerInfoESB_RKNS_9AAMDNodesEPNS_14BatchAAResultsE+0x143)[0x7fabdd06460b]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm19SelectionDAGBuilder18visitIntrinsicCallERKNS_8CallInstEj+0x914)[0x7fabdd0655aa]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm19SelectionDAGBuilder5visitERKNS_11InstructionE+0x1d9)[0x7fabdcbfe819]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm16SelectionDAGISel20SelectAllBasicBlocksERKNS_8FunctionE+0x150f)[0x7fabdcc00717]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm16SelectionDAGISel20runOnMachineFunctionERNS_15MachineFunctionE+0x19f)[0x7fabdcccff1f]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm22SelectionDAGISelLegacy20runOnMachineFunctionERNS_15MachineFunctionE+0x19b)[0x7fabdca22373]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE+0x8db)[0x7fabdca2595b]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm13FPPassManager11runOnModuleERNS_6ModuleE+0x28)[0x7fabdca24fbe]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.96.1-stable(_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE+0x2b0)[0x7fabdd002186]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x6244605)[0x7fabe4e44605]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x62440ae)[0x7fabe4e440ae]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x6245872)[0x7fabe4e45872]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(_RINvNtNtCs3JBboNF8E1m_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCskR6B7ZMDWD5_17rustc_codegen_ssa4back5write10spawn_workNtCsdUWQPj1M6pQ_18rustc_codegen_llvm18LlvmCodegenBackendE0uEB2c_+0x1e8)[0x7fabe4f88fea]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x6388b68)[0x7fabe4f88b68]
+/home/runner/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/librustc_driver-07ef66cfcebfb535.so(+0x638c6ac)[0x7fabe4f8c6ac]
+/lib/x86_64-linux-gnu/libc.so.6(+0x9caa4)[0x7fabdea8aaa4]
+/lib/x86_64-linux-gnu/libc.so.6(__clone+0x44)[0x7fabdeb17a64]
+
+note: we would appreciate a report at https://github.com/rust-lang/rust
+help: you can increase rustc's stack size by setting RUST_MIN_STACK=16777216

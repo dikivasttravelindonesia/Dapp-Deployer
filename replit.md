@@ -52,24 +52,42 @@ A full-stack DeFi boilerplate for a Dynamic Liquidity Market Maker (DLMM) on the
 - **Positions** (`/positions`): LP position cards with bin range, unrealized fees, strategy badge
 - **Analytics** (`/analytics`): Protocol-wide TVL/volume charts, top pools, recent transaction feed
 
-## Smart Contracts (Soroban / Rust)
+## Smart Contracts (Soroban / Rust) — LIVE on Stellar Testnet
 
 Located in `contracts/`. Compile with:
 ```bash
-cd contracts && cargo build --target wasm32-unknown-unknown --release
+cd contracts && RUSTFLAGS="--sysroot=/home/runner/workspace/.local/share/custom-sysroot -C target-cpu=mvp" cargo build --target wasm32-unknown-unknown --release
+```
+Optimize (required before deploy — raw builds are rejected by the network):
+```bash
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/<name>.wasm
 ```
 Deploy with the Stellar CLI:
 ```bash
-stellar contract deploy --wasm target/wasm32-unknown-unknown/release/stellar_dlmm.wasm --network testnet
+stellar contract deploy --wasm <optimized>.wasm --network testnet --source <deployer>
 ```
+
+**Deployed testnet contract IDs** (network configurable via `.env`, currently testnet):
+- DLMM: `CCTX4QBFZHMJLQSLWEN73553DQMOKFZADZQM2G2E7WBPFR4ITPVOKG4X`
+- Vault: `CCDVBRMT3BI65JV2C7AQJOSIGT76MNNTXSVYDKGXKPBSOKVWQRGKU7VI`
+- Math: `CB7U2EL6L4AR2IWANOSXDYVHWL3D3PD3XOZU6PUA4MDAVWCOT3AAVX4Z`
+- Native XLM SAC: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
+- TESTUSD SAC: `CCA733ILFGI7SESYWNBYTKHUJTJTSU2ORRT6SFNSDZWHYSE4WDLLDUND`
+
+All contract functions (initialize, add_liquidity_bin, simulate_swap, swap_exact_in_bin, remove_liquidity_bin, get_bin_reserves, vault deposit/withdraw/balance_of) have been smoke-tested on-chain with real transactions and transfer events.
+
+**Frontend integration**: `artifacts/stellar-dlmm/src/lib/contracts.ts` reads contract IDs/network from env (`VITE_STELLAR_NETWORK`, `VITE_DLMM_CONTRACT_ID`, etc). `src/lib/dlmm-client.ts` builds real unsigned transactions (swap quote via `simulate_swap`, add/remove liquidity) using `rpc.Server.prepareTransaction`; the UI signs via Freighter/Albedo (`wallet.tsx`) and submits+polls for confirmation. The Swap page (`/swap`) is fully wired to on-chain quotes and execution. On the Pool Detail page, Add/Remove Liquidity only activates for the single pool whose `contractAddress` matches the live DLMM contract (`pool-xlm-testusd-live`) — all other pools remain illustrative/computed data, since only one bin (id 0) is initialized on-chain. Positions, Analytics, and the Pools list stay on computed backend data (full protocol-wide indexing is out of scope for this demo).
 
 ## Gotchas
 
 - After any OpenAPI spec change, run codegen before modifying routes or frontend hooks.
 - The `@stellar/stellar-sdk` package must be added to `artifacts/stellar-dlmm/package.json` before using `src/lib/stellar.ts` in components (`pnpm --filter @workspace/stellar-dlmm add @stellar/stellar-sdk`).
 - Soroban contracts require Rust nightly + `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`.
+- Raw `cargo build` wasm output is rejected by the Stellar network (LEB128/reference-types issue) — always run `stellar contract optimize` on the wasm before `deploy`.
 - The workspace Orval config forces `info.title: Api` — do not rename it or generated filenames will break.
 - Query params that match `<OperationIdPascal>Params` pattern cause TS2308 collisions in codegen — define them without query params or use path params instead.
+- `contractAddress` is only present on the `PoolDetail` OpenAPI schema, not the list `Pool` schema — fetch a single pool to check whether it's the live on-chain pool.
+- Real wallet signing (Freighter/Albedo) can't be exercised by automated screenshot/e2e tooling since it requires a real browser extension; verify contract correctness via direct CLI/RPC calls instead.
 
 ## User preferences
 
