@@ -264,6 +264,19 @@ export const GetSwapRouteResponse = zod.object({
 
 
 /**
+ * @summary Send testnet TESTUSD to a wallet (requires an existing trustline)
+ */
+export const RequestTestusdFaucetBody = zod.object({
+  "address": zod.string().describe('Destination Stellar account (G...) that already has a TESTUSD trustline')
+})
+
+export const RequestTestusdFaucetResponse = zod.object({
+  "txHash": zod.string(),
+  "amount": zod.string()
+})
+
+
+/**
  * @summary List indexed transactions (swaps, adds, removes)
  */
 export const ListTransactionsQueryParams = zod.object({

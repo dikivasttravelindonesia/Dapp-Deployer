@@ -13,6 +13,16 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface FaucetRequest {
+  /** Destination Stellar account (G...) that already has a TESTUSD trustline */
+  address: string;
+}
+
+export interface FaucetResponse {
+  txHash: string;
+  amount: string;
+}
+
 export interface Token {
   symbol: string;
   name: string;

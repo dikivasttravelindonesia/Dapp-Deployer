@@ -8,6 +8,8 @@
 
 export * from './bin';
 export * from './errorResponse';
+export * from './faucetRequest';
+export * from './faucetResponse';
 export * from './healthStatus';
 export * from './listPoolsParams';
 export * from './listPoolsSortBy';

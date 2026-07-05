@@ -7,12 +7,13 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { LiquidityModal } from "@/components/liquidity-modal";
+import { LiquidityModal, type LiquidityStrategy } from "@/components/liquidity-modal";
 
 export default function PoolDetailPage() {
   const [, params] = useRoute("/pools/:poolId");
   const poolId = params?.poolId || "";
   const [liquidityModal, setLiquidityModal] = useState<"add" | "remove" | null>(null);
+  const [selectedStrategy, setSelectedStrategy] = useState<LiquidityStrategy>("spot");
 
   const { data: pool, isLoading: poolLoading } = useGetPool(poolId, { query: { enabled: !!poolId, queryKey: getGetPoolQueryKey(poolId) } });
   const { data: bins, isLoading: binsLoading, refetch: refetchBins } = useGetPoolBins(poolId, { query: { enabled: !!poolId, queryKey: getGetPoolBinsQueryKey(poolId) } });
@@ -134,9 +135,42 @@ export default function PoolDetailPage() {
         </div>
         
         <div className="flex gap-4 mt-6">
-          <Button variant="secondary" className="flex-1">Spot Strategy</Button>
-          <Button variant="secondary" className="flex-1">Curve Strategy</Button>
-          <Button variant="secondary" className="flex-1">Bid-Ask Strategy</Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            disabled={!isLivePool}
+            onClick={() => {
+              setSelectedStrategy("spot");
+              setLiquidityModal("add");
+            }}
+            data-testid="button-strategy-spot"
+          >
+            Spot Strategy
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            disabled={!isLivePool}
+            onClick={() => {
+              setSelectedStrategy("curve");
+              setLiquidityModal("add");
+            }}
+            data-testid="button-strategy-curve"
+          >
+            Curve Strategy
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            disabled={!isLivePool}
+            onClick={() => {
+              setSelectedStrategy("bidask");
+              setLiquidityModal("add");
+            }}
+            data-testid="button-strategy-bidask"
+          >
+            Bid-Ask Strategy
+          </Button>
         </div>
       </Card>
 
@@ -149,6 +183,7 @@ export default function PoolDetailPage() {
           tokenXSymbol={pool.tokenX.symbol}
           tokenYSymbol={pool.tokenY.symbol}
           poolId={pool.dlmmPoolId}
+          initialStrategy={selectedStrategy}
           onSuccess={() => refetchBins()}
         />
       )}

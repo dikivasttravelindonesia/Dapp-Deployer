@@ -22,6 +22,8 @@ import type {
 import type {
   Bin,
   ErrorResponse,
+  FaucetRequest,
+  FaucetResponse,
   HealthStatus,
   ListPoolsParams,
   ListTransactionsParams,
@@ -749,6 +751,76 @@ export const useGetSwapRoute = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getGetSwapRouteMutationOptions(options));
+    }
+
+export const getRequestTestusdFaucetUrl = () => {
+
+
+
+
+  return `/api/faucet/testusd`
+}
+
+/**
+ * @summary Send testnet TESTUSD to a wallet (requires an existing trustline)
+ */
+export const requestTestusdFaucet = async (faucetRequest: FaucetRequest, options?: RequestInit): Promise<FaucetResponse> => {
+
+  return customFetch<FaucetResponse>(getRequestTestusdFaucetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(faucetRequest)
+  }
+);}
+
+
+
+
+export const getRequestTestusdFaucetMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTestusdFaucet>>, TError,{data: BodyType<FaucetRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestTestusdFaucet>>, TError,{data: BodyType<FaucetRequest>}, TContext> => {
+
+const mutationKey = ['requestTestusdFaucet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestTestusdFaucet>>, {data: BodyType<FaucetRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestTestusdFaucet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestTestusdFaucetMutationResult = NonNullable<Awaited<ReturnType<typeof requestTestusdFaucet>>>
+    export type RequestTestusdFaucetMutationBody = BodyType<FaucetRequest>
+    export type RequestTestusdFaucetMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Send testnet TESTUSD to a wallet (requires an existing trustline)
+ */
+export const useRequestTestusdFaucet = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTestusdFaucet>>, TError,{data: BodyType<FaucetRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestTestusdFaucet>>,
+        TError,
+        {data: BodyType<FaucetRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestTestusdFaucetMutationOptions(options));
     }
 
 export const getListTransactionsUrl = (params?: ListTransactionsParams,) => {

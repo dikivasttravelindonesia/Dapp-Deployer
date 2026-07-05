@@ -188,6 +188,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/SwapRoute"
 
+  /faucet/testusd:
+    post:
+      operationId: requestTestusdFaucet
+      tags: [tokens]
+      summary: Send testnet TESTUSD to a wallet (requires an existing trustline)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FaucetRequest"
+      responses:
+        "200":
+          description: Faucet payment sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FaucetResponse"
+        "400":
+          description: Invalid request or missing trustline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Faucet payment failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /transactions:
     get:
       operationId: listTransactions
@@ -256,6 +287,23 @@ components:
       required: [error]
       properties:
         error:
+          type: string
+
+    FaucetRequest:
+      type: object
+      required: [address]
+      properties:
+        address:
+          type: string
+          description: Destination Stellar account (G...) that already has a TESTUSD trustline
+
+    FaucetResponse:
+      type: object
+      required: [txHash, amount]
+      properties:
+        txHash:
+          type: string
+        amount:
           type: string
 
     Token:

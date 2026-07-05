@@ -1,3 +1,4 @@
 - [Duplicate artifact workflows on same port](workflow-duplicates.md) — a manual workflow + the artifact-managed one can both bind the artifact's port → EADDRINUSE; keep only the artifact-managed one.
 - [Stellar CLI identity persistence & version pinning](stellar-deployer-identity-persistence.md) — deployer keys live in workspace `.config/stellar`, survive resets; match stellar-cli version to network protocolVersion.
 - [Soroban read-only vs state-changing function parity](soroban-readonly-guard-parity.md) — any invariant enforced in a state-changing contract fn (activation gates, pausing, etc.) must be duplicated in its read-only simulate/quote counterpart, or the UI shows quotes that later fail on submit.
+- [Radix Slider e2e test flakiness](radix-slider-e2e-testing.md) — testing-agent drag/click on a Radix Slider can land on an unintended value before key presses; verify with a narrow, single-action test before trusting a "bug".
