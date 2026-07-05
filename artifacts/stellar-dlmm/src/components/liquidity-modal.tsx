@@ -48,18 +48,48 @@ const STRATEGIES: { id: LiquidityStrategy; label: string; description: string }[
   { id: "bidask", label: "Bid-Ask", description: "Concentrated at the range edges" },
 ];
 
-/** Normalized per-offset weights (sum = 1) for a symmetric range of `radius` bins on each side. */
+function rawStrategyWeight(strategy: LiquidityStrategy, offset: number, radius: number): number {
+  if (strategy === "spot") return 1;
+  if (strategy === "curve") return radius + 1 - Math.abs(offset);
+  return Math.abs(offset) + 1; // bidask
+}
+
+/** Normalized per-offset weights (sum = 1) for a symmetric range of `radius` bins on each side.
+ * Used only for the visual distribution preview — actual token amounts use `tokenSplitWeights`
+ * below, since the contract only allows one-sided deposits for off-active bins. */
 function strategyWeights(strategy: LiquidityStrategy, radius: number): number[] {
   const offsets: number[] = [];
   for (let o = -radius; o <= radius; o++) offsets.push(o);
-
-  const raw = offsets.map((o) => {
-    if (strategy === "spot") return 1;
-    if (strategy === "curve") return radius + 1 - Math.abs(o);
-    return Math.abs(o) + 1; // bidask
-  });
+  const raw = offsets.map((o) => rawStrategyWeight(strategy, o, radius));
   const sum = raw.reduce((a, b) => a + b, 0);
   return raw.map((w) => w / sum);
+}
+
+/**
+ * The contract only allows one-sided deposits for off-active bins:
+ * bins above the active bin (offset > 0) may only hold token X, bins below
+ * (offset < 0) may only hold token Y, and the active bin (offset === 0) can
+ * hold both. This computes per-bin weights for each token independently,
+ * normalized within its own eligible subset, so `amount_x`/`amount_y` sent
+ * to the contract never violate that rule.
+ */
+function tokenSplitWeights(
+  strategy: LiquidityStrategy,
+  radius: number
+): { offset: number; wX: number; wY: number }[] {
+  const offsets: number[] = [];
+  for (let o = -radius; o <= radius; o++) offsets.push(o);
+
+  const xOffsets = offsets.filter((o) => o >= 0);
+  const yOffsets = offsets.filter((o) => o <= 0);
+  const xSum = xOffsets.reduce((a, o) => a + rawStrategyWeight(strategy, o, radius), 0);
+  const ySum = yOffsets.reduce((a, o) => a + rawStrategyWeight(strategy, o, radius), 0);
+
+  return offsets.map((o) => ({
+    offset: o,
+    wX: o >= 0 ? rawStrategyWeight(strategy, o, radius) / xSum : 0,
+    wY: o <= 0 ? rawStrategyWeight(strategy, o, radius) / ySum : 0,
+  }));
 }
 
 export function LiquidityModal({
@@ -157,18 +187,17 @@ export function LiquidityModal({
         if (!amountX || !amountY || parseFloat(amountX) <= 0 || parseFloat(amountY) <= 0) {
           throw new Error(`Enter both ${tokenXSymbol} and ${tokenYSymbol} amounts`);
         }
-        const weights = strategyWeights(strategy, radius);
+        const splits = tokenSplitWeights(strategy, radius);
         const totalX = displayToStroops(amountX);
         const totalY = displayToStroops(amountY);
 
-        setProgress({ done: 0, total: weights.length });
-        for (let i = 0; i < weights.length; i++) {
-          const offset = i - radius;
-          const w = weights[i];
-          const amtX = BigInt(Math.floor(Number(totalX) * w));
-          const amtY = BigInt(Math.floor(Number(totalY) * w));
+        setProgress({ done: 0, total: splits.length });
+        for (let i = 0; i < splits.length; i++) {
+          const { offset, wX, wY } = splits[i];
+          const amtX = BigInt(Math.floor(Number(totalX) * wX));
+          const amtY = BigInt(Math.floor(Number(totalY) * wY));
           if (amtX <= 0n && amtY <= 0n) {
-            setProgress({ done: i + 1, total: weights.length });
+            setProgress({ done: i + 1, total: splits.length });
             continue;
           }
           const prepared = await buildAddLiquidityTransaction(
