@@ -1,10 +1,15 @@
 /**
  * Real on-chain client for the deployed DLMM Soroban contract.
  *
+ * The contract hosts a MULTI-POOL registry: every function below takes a
+ * `poolId` (the numeric pool_id returned by `create_pool` / `list_pools`)
+ * so the same contract instance serves every pool ever created — Standard
+ * Pools and Launch Pools alike.
+ *
  * Quotes are obtained via read-only simulation (no wallet required).
- * Swaps are built, simulated+assembled with `prepareTransaction`, signed by
- * the connected wallet (Freighter/Albedo), and submitted to the network —
- * no mocked data anywhere in this path.
+ * Mutating calls are built, simulated+assembled with `prepareTransaction`,
+ * signed by the connected wallet (Freighter/Albedo), and submitted to the
+ * network — no mocked data anywhere in this path.
  */
 
 import {
@@ -20,12 +25,13 @@ import {
   addressToScVal,
   i32ToScVal,
   i128ToScVal,
+  u64ToScVal,
   boolToScVal,
   NETWORK_CONFIG,
   decodeSwapResult,
   type SwapResultDecoded,
 } from "./stellar";
-import { DLMM_CONTRACT_ID, STELLAR_NETWORK } from "./contracts";
+import { DLMM_CONTRACT_ID, STELLAR_NETWORK, DEFAULT_POOL_ID } from "./contracts";
 
 // A funded, publicly-known testnet account used only to satisfy Soroban's
 // requirement for a transaction source account when simulating read-only
@@ -48,7 +54,8 @@ export interface SwapQuote {
  */
 export async function getOnChainSwapQuote(
   xToY: boolean,
-  amountIn: bigint
+  amountIn: bigint,
+  poolId: number = DEFAULT_POOL_ID
 ): Promise<SwapQuote> {
   const rpcServer = createRpcServer(STELLAR_NETWORK);
   const account = await rpcServer.getAccount(QUOTE_SOURCE_ACCOUNT);
@@ -59,7 +66,12 @@ export async function getOnChainSwapQuote(
     networkPassphrase: NETWORK_CONFIG[STELLAR_NETWORK].networkPassphrase,
   })
     .addOperation(
-      contract.call("simulate_swap", boolToScVal(xToY), i128ToScVal(amountIn))
+      contract.call(
+        "simulate_swap",
+        u64ToScVal(poolId),
+        boolToScVal(xToY),
+        i128ToScVal(amountIn)
+      )
     )
     .setTimeout(30)
     .build();
@@ -85,7 +97,8 @@ export async function buildSwapTransaction(
   callerAddress: string,
   xToY: boolean,
   amountIn: bigint,
-  minAmountOut: bigint
+  minAmountOut: bigint,
+  poolId: number = DEFAULT_POOL_ID
 ) {
   const rpcServer = createRpcServer(STELLAR_NETWORK);
   const account = await rpcServer.getAccount(callerAddress);
@@ -98,6 +111,7 @@ export async function buildSwapTransaction(
     .addOperation(
       contract.call(
         "swap_exact_in_bin",
+        u64ToScVal(poolId),
         addressToScVal(callerAddress),
         boolToScVal(xToY),
         i128ToScVal(amountIn),
@@ -160,7 +174,8 @@ export async function buildAddLiquidityTransaction(
   callerAddress: string,
   binId: number,
   amountX: bigint,
-  amountY: bigint
+  amountY: bigint,
+  poolId: number = DEFAULT_POOL_ID
 ) {
   const rpcServer = createRpcServer(STELLAR_NETWORK);
   const account = await rpcServer.getAccount(callerAddress);
@@ -173,6 +188,7 @@ export async function buildAddLiquidityTransaction(
     .addOperation(
       contract.call(
         "add_liquidity_bin",
+        u64ToScVal(poolId),
         addressToScVal(callerAddress),
         i32ToScVal(binId),
         i128ToScVal(amountX),
@@ -186,7 +202,11 @@ export async function buildAddLiquidityTransaction(
 }
 
 /** Builds a prepared (simulated + assembled) `remove_liquidity_bin` transaction. */
-export async function buildRemoveLiquidityTransaction(callerAddress: string, binId: number) {
+export async function buildRemoveLiquidityTransaction(
+  callerAddress: string,
+  binId: number,
+  poolId: number = DEFAULT_POOL_ID
+) {
   const rpcServer = createRpcServer(STELLAR_NETWORK);
   const account = await rpcServer.getAccount(callerAddress);
   const contract = new Contract(DLMM_CONTRACT_ID);
@@ -196,12 +216,75 @@ export async function buildRemoveLiquidityTransaction(callerAddress: string, bin
     networkPassphrase: NETWORK_CONFIG[STELLAR_NETWORK].networkPassphrase,
   })
     .addOperation(
-      contract.call("remove_liquidity_bin", addressToScVal(callerAddress), i32ToScVal(binId))
+      contract.call(
+        "remove_liquidity_bin",
+        u64ToScVal(poolId),
+        addressToScVal(callerAddress),
+        i32ToScVal(binId)
+      )
     )
     .setTimeout(60)
     .build();
 
   return rpcServer.prepareTransaction(tx);
+}
+
+export interface CreatePoolParams {
+  creatorAddress: string;
+  tokenX: string;
+  tokenY: string;
+  binStepBps: number;
+  baseFeeBps: number;
+  activeBinId: number;
+  /** Unix seconds. 0 = Standard Pool (active immediately). Future = Launch Pool (anti-snipe). */
+  activationTs: number;
+}
+
+/**
+ * Builds a prepared (simulated + assembled) `create_pool` transaction.
+ * Permissionless — any connected wallet can create a Standard Pool
+ * (activationTs=0) or a Launch Pool (activationTs in the future).
+ * The new pool_id is returned by `submitSignedTransaction`'s decoded result.
+ */
+export async function buildCreatePoolTransaction(params: CreatePoolParams) {
+  const {
+    creatorAddress,
+    tokenX,
+    tokenY,
+    binStepBps,
+    baseFeeBps,
+    activeBinId,
+    activationTs,
+  } = params;
+  const rpcServer = createRpcServer(STELLAR_NETWORK);
+  const account = await rpcServer.getAccount(creatorAddress);
+  const contract = new Contract(DLMM_CONTRACT_ID);
+
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_CONFIG[STELLAR_NETWORK].networkPassphrase,
+  })
+    .addOperation(
+      contract.call(
+        "create_pool",
+        addressToScVal(creatorAddress),
+        addressToScVal(tokenX),
+        addressToScVal(tokenY),
+        i128ToScVal(BigInt(binStepBps)),
+        i128ToScVal(BigInt(baseFeeBps)),
+        i32ToScVal(activeBinId),
+        u64ToScVal(activationTs)
+      )
+    )
+    .setTimeout(60)
+    .build();
+
+  return rpcServer.prepareTransaction(tx);
+}
+
+/** Decodes the u64 pool_id returned by a confirmed `create_pool` transaction. */
+export function decodeCreatedPoolId(returnValue: unknown): number {
+  return Number(scValToNative(returnValue as any) as bigint);
 }
 
 /** Submits a wallet-signed XDR and waits for confirmation. Returns the raw ScVal return value. */

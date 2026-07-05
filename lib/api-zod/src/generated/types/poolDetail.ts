@@ -28,4 +28,9 @@ export interface PoolDetail {
   totalShares?: number;
   externalUrl?: string;
   volumeAvailable?: boolean;
+  dlmmPoolId?: number;
+  isLaunchPool?: boolean;
+  activationTs?: number;
+  protocolFeeBps?: number;
+  lpFeeBps?: number;
 }

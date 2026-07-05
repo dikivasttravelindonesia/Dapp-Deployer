@@ -57,7 +57,12 @@ export const ListPoolsResponseItem = zod.object({
   "reserveY": zod.number().optional(),
   "totalShares": zod.number().optional().describe('Total LP shares\/pool shares outstanding (AMM pools from Horizon)'),
   "externalUrl": zod.string().optional().describe('Link to view an AMM pool on stellar.expert'),
-  "volumeAvailable": zod.boolean().optional().describe('False when 24h volume\/APR is not indexed for this pool (shown as — in UI)')
+  "volumeAvailable": zod.boolean().optional().describe('False when 24h volume\/APR is not indexed for this pool (shown as — in UI)'),
+  "dlmmPoolId": zod.number().optional().describe('Numeric pool_id inside the DLMM registry contract (dlmm pools only)'),
+  "isLaunchPool": zod.boolean().optional().describe('True when activationTs is in the future — pool accepts liquidity but swaps are gated (anti-snipe)'),
+  "activationTs": zod.number().optional().describe('Unix timestamp after which swaps are allowed. 0 = Standard Pool (active immediately)'),
+  "protocolFeeBps": zod.number().optional().describe('Platform\'s share of every swap fee, in bps of the fee (contract-wide, admin-adjustable)'),
+  "lpFeeBps": zod.number().optional().describe('LP\'s share of every swap fee, in bps of the fee (10000 - protocolFeeBps)')
 })
 export const ListPoolsResponse = zod.array(ListPoolsResponseItem)
 
@@ -104,7 +109,12 @@ export const GetPoolResponse = zod.object({
   "contractAddress": zod.string().optional(),
   "totalShares": zod.number().optional(),
   "externalUrl": zod.string().optional(),
-  "volumeAvailable": zod.boolean().optional()
+  "volumeAvailable": zod.boolean().optional(),
+  "dlmmPoolId": zod.number().optional(),
+  "isLaunchPool": zod.boolean().optional(),
+  "activationTs": zod.number().optional(),
+  "protocolFeeBps": zod.number().optional(),
+  "lpFeeBps": zod.number().optional()
 })
 
 
@@ -321,7 +331,12 @@ export const GetUserPositionsResponseItem = zod.object({
   "reserveY": zod.number().optional(),
   "totalShares": zod.number().optional().describe('Total LP shares\/pool shares outstanding (AMM pools from Horizon)'),
   "externalUrl": zod.string().optional().describe('Link to view an AMM pool on stellar.expert'),
-  "volumeAvailable": zod.boolean().optional().describe('False when 24h volume\/APR is not indexed for this pool (shown as — in UI)')
+  "volumeAvailable": zod.boolean().optional().describe('False when 24h volume\/APR is not indexed for this pool (shown as — in UI)'),
+  "dlmmPoolId": zod.number().optional().describe('Numeric pool_id inside the DLMM registry contract (dlmm pools only)'),
+  "isLaunchPool": zod.boolean().optional().describe('True when activationTs is in the future — pool accepts liquidity but swaps are gated (anti-snipe)'),
+  "activationTs": zod.number().optional().describe('Unix timestamp after which swaps are allowed. 0 = Standard Pool (active immediately)'),
+  "protocolFeeBps": zod.number().optional().describe('Platform\'s share of every swap fee, in bps of the fee (contract-wide, admin-adjustable)'),
+  "lpFeeBps": zod.number().optional().describe('LP\'s share of every swap fee, in bps of the fee (10000 - protocolFeeBps)')
 }).optional(),
   "address": zod.string(),
   "binRangeLow": zod.number(),

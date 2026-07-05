@@ -3,7 +3,10 @@
  *
  * Two live sources, no mock data:
  *   1. Our deployed DLMM Soroban contract — read via read-only RPC simulation
- *      (get_config / get_active_bin / get_bins / get_positions). No signing.
+ *      (list_pools / get_config / get_active_bin / get_bins / get_positions /
+ *      get_protocol_fee_bps). No signing. The contract hosts a MULTI-POOL
+ *      registry: `list_pools()` returns every pool_id ever created via
+ *      `create_pool`, and every other view takes a `pool_id` argument.
  *   2. Native Stellar DEX liquidity pools — read from Horizon /liquidity_pools
  *      (the "AMM from Stellar DEX" aggregator category).
  *
@@ -32,7 +35,9 @@ const HORIZON_URL = process.env["STELLAR_HORIZON_URL"] ?? "https://horizon-testn
 const NETWORK_PASSPHRASE = Networks.TESTNET;
 
 const DLMM_CONTRACT_ID =
-  process.env["DLMM_CONTRACT_ID"] ?? "CAWVYZS7FXVSOXTE7DBUULYOHCWVA2RML4CHXOETGS32FOBCOZ7YH4RS";
+  process.env["DLMM_CONTRACT_ID"] ?? "CCAP3SFH2TTSON2ELHCRRUZBXGL4CVWUME33JAATFYX4QSXSGQH2Q2TG";
+const NATIVE_XLM_SAC =
+  process.env["TOKEN_X_ADDRESS"] ?? "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 const TESTUSD_SAC =
   process.env["TOKEN_Y_ADDRESS"] ?? "CCA733ILFGI7SESYWNBYTKHUJTJTSU2ORRT6SFNSDZWHYSE4WDLLDUND";
 
@@ -42,7 +47,16 @@ const TESTUSD_SAC =
 const SOURCE_ACCOUNT =
   process.env["QUOTE_SOURCE_ACCOUNT"] ?? "GD3HFFCVSBBQSHHXJGJLSRCAFTGRT5XFHSGCC2U7BDKBFPQWZWITDWQ2";
 
-export const DLMM_POOL_ID = "pool-xlm-testusd-live";
+/** Builds the string pool id used across the API/frontend for a DLMM registry pool_id. */
+export function dlmmPoolRecordId(poolId: number): string {
+  return `dlmm-${poolId}`;
+}
+
+/** Parses a `dlmm-<n>` string id back into the numeric registry pool_id, or null. */
+function parseDlmmPoolRecordId(id: string): number | null {
+  const m = /^dlmm-(\d+)$/.exec(id);
+  return m ? Number(m[1]) : null;
+}
 
 const SCALAR = 7; // token decimals (stroops → display units = 10^7)
 const XLM_LOGO =
@@ -83,6 +97,11 @@ export interface PoolRecord {
   volumeAvailable: boolean;
   contractAddress?: string;
   totalBins?: number;
+  dlmmPoolId?: number;
+  isLaunchPool?: boolean;
+  activationTs?: number;
+  protocolFeeBps?: number;
+  lpFeeBps?: number;
 }
 
 export interface BinRecord {
@@ -116,11 +135,22 @@ export interface PositionRecord {
 function memoize<T>(ttlMs: number, fn: () => Promise<T>): () => Promise<T> {
   let value: T | undefined;
   let expiresAt = 0;
+  let inflight: Promise<T> | null = null;
   return async () => {
     if (value !== undefined && Date.now() < expiresAt) return value;
-    value = await fn();
-    expiresAt = Date.now() + ttlMs;
-    return value;
+    if (inflight) return inflight;
+    inflight = fn()
+      .then((v) => {
+        value = v;
+        expiresAt = Date.now() + ttlMs;
+        inflight = null;
+        return v;
+      })
+      .catch((err) => {
+        inflight = null;
+        throw err;
+      });
+    return inflight;
   };
 }
 
@@ -169,12 +199,17 @@ async function simRead(fn: string, args: xdr.ScVal[] = []): Promise<unknown> {
   return scValToNative(sim.result.retval);
 }
 
+function poolIdArg(poolId: number): xdr.ScVal {
+  return xdr.ScVal.scvU64(xdr.Uint64.fromString(String(poolId)));
+}
+
 interface RawConfig {
   admin: string;
   token_x: string;
   token_y: string;
   bin_step_bps: bigint | number;
   base_fee_bps: bigint | number;
+  activation_ts: bigint | number;
 }
 interface RawBin {
   bin_id: number;
@@ -235,21 +270,55 @@ function testUsdToken(): Token {
   };
 }
 
+/** Resolves a contract token address to a display Token. Falls back to a
+ * generic entry (no reliable USD price) for tokens created via `create_pool`
+ * that aren't one of the two seeded testnet assets. */
+function tokenFromAddress(address: string, xlmPrice: number): Token {
+  if (address === NATIVE_XLM_SAC) return xlmToken(xlmPrice);
+  if (address === TESTUSD_SAC) return testUsdToken();
+  return {
+    symbol: `${address.slice(0, 4)}…${address.slice(-4)}`,
+    name: "Custom token",
+    address,
+    decimals: 7,
+    price: 0,
+    priceChange24h: 0,
+    logoUrl: "",
+  };
+}
+
 // ---------------------------------------------------------------------------
-// DLMM pool (our contract) — real on-chain reads
+// DLMM registry (our contract) — real on-chain reads, multi-pool
 // ---------------------------------------------------------------------------
 
-async function readDlmmPool(): Promise<PoolRecord> {
-  const [config, activeBinRaw, binsRaw, xlmPrice] = await Promise.all([
-    simRead("get_config") as Promise<RawConfig>,
-    simRead("get_active_bin") as Promise<number>,
-    simRead("get_bins") as Promise<RawBin[]>,
+const getProtocolFeeBps = memoize(60_000, async (): Promise<number> => {
+  const raw = (await simRead("get_protocol_fee_bps")) as bigint | number;
+  return Number(raw);
+});
+
+const getDlmmPoolIds = memoize(15_000, async (): Promise<number[]> => {
+  const raw = (await simRead("list_pools")) as (bigint | number)[];
+  return raw.map((id) => Number(id));
+});
+
+async function readDlmmPool(poolId: number): Promise<PoolRecord> {
+  const [config, activeBinRaw, binsRaw, xlmPrice, protocolFeeBps] = await Promise.all([
+    simRead("get_config", [poolIdArg(poolId)]) as Promise<RawConfig>,
+    simRead("get_active_bin", [poolIdArg(poolId)]) as Promise<number>,
+    simRead("get_bins", [poolIdArg(poolId)]) as Promise<RawBin[]>,
     getXlmPrice(),
+    getProtocolFeeBps(),
   ]);
 
   const binStep = Number(config.bin_step_bps);
   const baseFeeBps = Number(config.base_fee_bps);
   const activeBinId = Number(activeBinRaw);
+  const activationTs = Number(config.activation_ts ?? 0);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const isLaunchPool = activationTs > 0;
+
+  const tokenX = tokenFromAddress(config.token_x, xlmPrice);
+  const tokenY = tokenFromAddress(config.token_y, xlmPrice);
 
   let reserveX = 0;
   let reserveY = 0;
@@ -258,13 +327,13 @@ async function readDlmmPool(): Promise<PoolRecord> {
     reserveY += fromStroops(b.reserve_y);
   }
 
-  const tvl = reserveX * xlmPrice + reserveY; // TESTUSD ≈ $1
+  const tvl = reserveX * tokenX.price + reserveY * tokenY.price;
 
   return {
-    id: DLMM_POOL_ID,
+    id: dlmmPoolRecordId(poolId),
     category: "dlmm",
-    tokenX: xlmToken(xlmPrice),
-    tokenY: testUsdToken(),
+    tokenX,
+    tokenY,
     tvl,
     volume24h: 0,
     fees24h: 0,
@@ -278,21 +347,41 @@ async function readDlmmPool(): Promise<PoolRecord> {
     volumeAvailable: false,
     contractAddress: DLMM_CONTRACT_ID,
     totalBins: binsRaw.length,
+    dlmmPoolId: poolId,
+    isLaunchPool: isLaunchPool && nowSec < activationTs,
+    activationTs,
+    protocolFeeBps,
+    lpFeeBps: 10_000 - protocolFeeBps,
   };
 }
 
-const getDlmmPool = memoize(30_000, readDlmmPool);
+const dlmmPoolCache = new Map<number, ReturnType<typeof memoize<PoolRecord>>>();
+function getDlmmPool(poolId: number): Promise<PoolRecord> {
+  let cached = dlmmPoolCache.get(poolId);
+  if (!cached) {
+    cached = memoize(15_000, () => readDlmmPool(poolId));
+    dlmmPoolCache.set(poolId, cached);
+  }
+  return cached();
+}
 
-/** Real bin distribution for the DLMM pool from get_bins. */
-async function readDlmmBins(): Promise<BinRecord[]> {
+async function getAllDlmmPools(): Promise<PoolRecord[]> {
+  const ids = await getDlmmPoolIds();
+  return Promise.all(ids.map((id) => getDlmmPool(id)));
+}
+
+/** Real bin distribution for a DLMM pool from get_bins. */
+async function readDlmmBins(poolId: number): Promise<BinRecord[]> {
   const [config, activeBinRaw, binsRaw, xlmPrice] = await Promise.all([
-    simRead("get_config") as Promise<RawConfig>,
-    simRead("get_active_bin") as Promise<number>,
-    simRead("get_bins") as Promise<RawBin[]>,
+    simRead("get_config", [poolIdArg(poolId)]) as Promise<RawConfig>,
+    simRead("get_active_bin", [poolIdArg(poolId)]) as Promise<number>,
+    simRead("get_bins", [poolIdArg(poolId)]) as Promise<RawBin[]>,
     getXlmPrice(),
   ]);
   const binStep = Number(config.bin_step_bps);
   const activeBinId = Number(activeBinRaw);
+  const tokenX = tokenFromAddress(config.token_x, xlmPrice);
+  const tokenY = tokenFromAddress(config.token_y, xlmPrice);
 
   return binsRaw
     .map((b) => {
@@ -306,15 +395,23 @@ async function readDlmmBins(): Promise<BinRecord[]> {
         liquidityX,
         liquidityY,
         isActive: binId === activeBinId,
-        totalLiquidity: liquidityX * xlmPrice + liquidityY,
+        totalLiquidity: liquidityX * tokenX.price + liquidityY * tokenY.price,
       };
     })
     .sort((a, b) => a.binId - b.binId);
 }
 
-const getDlmmBins = memoize(30_000, readDlmmBins);
+const dlmmBinsCache = new Map<number, ReturnType<typeof memoize<BinRecord[]>>>();
+function getDlmmBins(poolId: number): Promise<BinRecord[]> {
+  let cached = dlmmBinsCache.get(poolId);
+  if (!cached) {
+    cached = memoize(15_000, () => readDlmmBins(poolId));
+    dlmmBinsCache.set(poolId, cached);
+  }
+  return cached();
+}
 
-/** Real per-user LP positions from get_positions. Empty array if none. */
+/** Real per-user LP positions across every DLMM registry pool. Empty array if none. */
 export async function getUserPositions(address: string): Promise<PositionRecord[]> {
   let addressScVal: xdr.ScVal;
   try {
@@ -323,36 +420,40 @@ export async function getUserPositions(address: string): Promise<PositionRecord[
     return [];
   }
 
-  const [positionsRaw, pool, xlmPrice] = await Promise.all([
-    simRead("get_positions", [addressScVal]) as Promise<RawPosition[]>,
-    getDlmmPool(),
-    getXlmPrice(),
-  ]);
+  const poolIds = await getDlmmPoolIds();
+  const perPool = await Promise.all(
+    poolIds.map(async (poolId) => {
+      const [positionsRaw, pool] = await Promise.all([
+        simRead("get_positions", [poolIdArg(poolId), addressScVal]) as Promise<RawPosition[]>,
+        getDlmmPool(poolId),
+      ]);
 
-  return positionsRaw
-    .map((p) => {
-      const binId = Number(p.bin_id);
-      const liquidityX = fromStroops(p.amount_x);
-      const liquidityY = fromStroops(p.amount_y);
-      return {
-        id: `${address.slice(0, 6)}-bin${binId}`,
-        poolId: DLMM_POOL_ID,
-        pool,
-        address,
-        binId,
-        binRangeLow: binId,
-        binRangeHigh: binId,
-        shares: fromStroops(p.shares),
-        liquidityX,
-        liquidityY,
-        valueUsd: liquidityX * xlmPrice + liquidityY,
-        // Trading fees auto-compound into a bin's reserves in this model, so a
-        // position's claimable amount already includes accrued fees — there is
-        // no separately-tracked "unrealized fee" balance to report.
-        unrealizedFees: 0,
-      };
-    })
-    .sort((a, b) => a.binId - b.binId);
+      return positionsRaw.map((p) => {
+        const binId = Number(p.bin_id);
+        const liquidityX = fromStroops(p.amount_x);
+        const liquidityY = fromStroops(p.amount_y);
+        return {
+          id: `${address.slice(0, 6)}-pool${poolId}-bin${binId}`,
+          poolId: dlmmPoolRecordId(poolId),
+          pool,
+          address,
+          binId,
+          binRangeLow: binId,
+          binRangeHigh: binId,
+          shares: fromStroops(p.shares),
+          liquidityX,
+          liquidityY,
+          valueUsd: liquidityX * pool.tokenX.price + liquidityY * pool.tokenY.price,
+          // Trading fees auto-compound into a bin's reserves in this model, so a
+          // position's claimable amount already includes accrued fees — there is
+          // no separately-tracked "unrealized fee" balance to report.
+          unrealizedFees: 0,
+        };
+      });
+    }),
+  );
+
+  return perPool.flat().sort((a, b) => a.binId - b.binId);
 }
 
 // ---------------------------------------------------------------------------
@@ -440,19 +541,25 @@ const getAmmPools = memoize(60_000, readAmmPools);
 // ---------------------------------------------------------------------------
 
 export async function getAllPools(): Promise<PoolRecord[]> {
-  const [dlmm, amm] = await Promise.all([getDlmmPool(), getAmmPools()]);
-  return [dlmm, ...amm];
+  const [dlmm, amm] = await Promise.all([getAllDlmmPools(), getAmmPools()]);
+  return [...dlmm, ...amm];
 }
 
 export async function getPoolById(poolId: string): Promise<PoolRecord | null> {
-  if (poolId === DLMM_POOL_ID) return getDlmmPool();
+  const dlmmId = parseDlmmPoolRecordId(poolId);
+  if (dlmmId !== null) {
+    const ids = await getDlmmPoolIds();
+    if (!ids.includes(dlmmId)) return null;
+    return getDlmmPool(dlmmId);
+  }
   const amm = await getAmmPools();
   return amm.find((p) => p.id === poolId) ?? null;
 }
 
 export async function getPoolBins(poolId: string): Promise<BinRecord[] | null> {
-  if (poolId !== DLMM_POOL_ID) return null; // only the DLMM pool has discrete bins
-  return getDlmmBins();
+  const dlmmId = parseDlmmPoolRecordId(poolId);
+  if (dlmmId === null) return null; // only DLMM pools have discrete bins
+  return getDlmmBins(dlmmId);
 }
 
 export async function getProtocolSummary() {

@@ -21,6 +21,9 @@ export const DLMM_CONTRACT_ID = requireEnv("VITE_DLMM_CONTRACT_ID");
 export const VAULT_CONTRACT_ID = requireEnv("VITE_VAULT_CONTRACT_ID");
 export const MATH_CONTRACT_ID = requireEnv("VITE_MATH_CONTRACT_ID");
 
+/** The seeded "Standard Pool" (XLM/TESTUSD) pool_id inside the DLMM registry contract. */
+export const DEFAULT_POOL_ID = Number(import.meta.env.VITE_DEFAULT_POOL_ID ?? "0");
+
 export const TOKEN_X = {
   address: requireEnv("VITE_TOKEN_X_ADDRESS"),
   symbol: import.meta.env.VITE_TOKEN_X_SYMBOL ?? "X",

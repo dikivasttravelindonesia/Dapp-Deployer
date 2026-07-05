@@ -56,6 +56,16 @@ export interface Pool {
   externalUrl?: string;
   /** False when 24h volume/APR is not indexed for this pool (shown as — in UI) */
   volumeAvailable?: boolean;
+  /** Numeric pool_id inside the DLMM registry contract (dlmm pools only) */
+  dlmmPoolId?: number;
+  /** True when activationTs is in the future — pool accepts liquidity but swaps are gated (anti-snipe) */
+  isLaunchPool?: boolean;
+  /** Unix timestamp after which swaps are allowed. 0 = Standard Pool (active immediately) */
+  activationTs?: number;
+  /** Platform's share of every swap fee, in bps of the fee (contract-wide, admin-adjustable) */
+  protocolFeeBps?: number;
+  /** LP's share of every swap fee, in bps of the fee (10000 - protocolFeeBps) */
+  lpFeeBps?: number;
 }
 
 export type PoolDetailCategory = typeof PoolDetailCategory[keyof typeof PoolDetailCategory];
@@ -86,6 +96,11 @@ export interface PoolDetail {
   totalShares?: number;
   externalUrl?: string;
   volumeAvailable?: boolean;
+  dlmmPoolId?: number;
+  isLaunchPool?: boolean;
+  activationTs?: number;
+  protocolFeeBps?: number;
+  lpFeeBps?: number;
 }
 
 export interface Bin {

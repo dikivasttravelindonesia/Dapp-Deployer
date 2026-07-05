@@ -17,6 +17,7 @@ import {
   buildRemoveLiquidityTransaction,
   submitSignedTransaction,
 } from "@/lib/dlmm-client";
+import { DEFAULT_POOL_ID } from "@/lib/contracts";
 
 interface LiquidityModalProps {
   open: boolean;
@@ -25,6 +26,8 @@ interface LiquidityModalProps {
   binId: number;
   tokenXSymbol: string;
   tokenYSymbol: string;
+  /** Numeric pool_id inside the DLMM registry contract. Defaults to the seeded Standard Pool. */
+  poolId?: number;
   onSuccess?: () => void;
 }
 
@@ -35,6 +38,7 @@ export function LiquidityModal({
   binId,
   tokenXSymbol,
   tokenYSymbol,
+  poolId = DEFAULT_POOL_ID,
   onSuccess,
 }: LiquidityModalProps) {
   const wallet = useWallet();
@@ -59,10 +63,11 @@ export function LiquidityModal({
           wallet.address,
           binId,
           displayToStroops(amountX),
-          displayToStroops(amountY)
+          displayToStroops(amountY),
+          poolId
         );
       } else {
-        prepared = await buildRemoveLiquidityTransaction(wallet.address, binId);
+        prepared = await buildRemoveLiquidityTransaction(wallet.address, binId, poolId);
       }
 
       const signedXdr = await wallet.signTransaction(prepared.toXDR());

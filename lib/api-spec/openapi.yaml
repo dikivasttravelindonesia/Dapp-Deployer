@@ -320,6 +320,21 @@ components:
         volumeAvailable:
           type: boolean
           description: "False when 24h volume/APR is not indexed for this pool (shown as — in UI)"
+        dlmmPoolId:
+          type: integer
+          description: "Numeric pool_id inside the DLMM registry contract (dlmm pools only)"
+        isLaunchPool:
+          type: boolean
+          description: "True when activationTs is in the future — pool accepts liquidity but swaps are gated (anti-snipe)"
+        activationTs:
+          type: integer
+          description: "Unix timestamp after which swaps are allowed. 0 = Standard Pool (active immediately)"
+        protocolFeeBps:
+          type: integer
+          description: "Platform's share of every swap fee, in bps of the fee (contract-wide, admin-adjustable)"
+        lpFeeBps:
+          type: integer
+          description: "LP's share of every swap fee, in bps of the fee (10000 - protocolFeeBps)"
 
     PoolDetail:
       type: object
@@ -364,6 +379,16 @@ components:
           type: string
         volumeAvailable:
           type: boolean
+        dlmmPoolId:
+          type: integer
+        isLaunchPool:
+          type: boolean
+        activationTs:
+          type: integer
+        protocolFeeBps:
+          type: integer
+        lpFeeBps:
+          type: integer
 
     Bin:
       type: object

@@ -4,7 +4,7 @@ import type { Pool } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Zap, ExternalLink, Boxes, Waves, Info } from "lucide-react";
+import { Search, Zap, ExternalLink, Boxes, Waves, Info, PlusCircle, Rocket } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type CategoryFilter = "all" | "dlmm" | "amm";
@@ -38,13 +38,21 @@ export default function PoolsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Liquidity Pools</h1>
           <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            Our on-chain DLMM pool plus live native-XLM pools aggregated from the Stellar DEX.
+            DLMM pools plus live native-XLM pools aggregated from the Stellar DEX.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-3 lg:min-w-[420px]">
-          <StatChip label="Total TVL" value={summary?.totalTvl} loading={summaryLoading} isCurrency />
-          <StatChip label="24h Volume" value={undefined} loading={summaryLoading} unavailable />
-          <StatChip label="24h Fees" value={undefined} loading={summaryLoading} unavailable />
+        <div className="flex items-center gap-3">
+          <div className="grid grid-cols-3 gap-3 lg:min-w-[420px]">
+            <StatChip label="Total TVL" value={summary?.totalTvl} loading={summaryLoading} isCurrency />
+            <StatChip label="24h Volume" value={undefined} loading={summaryLoading} unavailable />
+            <StatChip label="24h Fees" value={undefined} loading={summaryLoading} unavailable />
+          </div>
+          <Link href="/create">
+            <Button className="rounded-full h-full shrink-0" data-testid="button-create-pool-cta">
+              <PlusCircle className="w-4 h-4 mr-1.5" />
+              Create
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -183,7 +191,14 @@ function PoolGroup({
                           <TokenLogo url={pool.tokenY.logoUrl} symbol={pool.tokenY.symbol} />
                         </div>
                         <div className="min-w-0">
-                          <div className="font-bold">{pool.tokenX.symbol}-{pool.tokenY.symbol}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold">{pool.tokenX.symbol}-{pool.tokenY.symbol}</span>
+                            {pool.isLaunchPool && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-medium uppercase tracking-wide">
+                                Launch
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             {typeof pool.fee === "number" && (
                               <span className="text-[11px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
@@ -239,7 +254,14 @@ function PoolGroup({
                       <TokenLogo url={pool.tokenY.logoUrl} symbol={pool.tokenY.symbol} size={32} />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold truncate">{pool.tokenX.symbol}-{pool.tokenY.symbol}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold truncate">{pool.tokenX.symbol}-{pool.tokenY.symbol}</span>
+                        {pool.isLaunchPool && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-medium uppercase tracking-wide shrink-0">
+                            Launch
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-muted-foreground font-mono">
                         {pool.currentPrice != null
                           ? pool.currentPrice.toLocaleString("en", { maximumFractionDigits: 6 })

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { useGetPool, useGetPoolBins, useGetPoolStats, getGetPoolQueryKey, getGetPoolBinsQueryKey, getGetPoolStatsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { DLMM_CONTRACT_ID } from "@/lib/contracts";
 import { LiquidityModal } from "@/components/liquidity-modal";
 
 export default function PoolDetailPage() {
@@ -25,7 +24,7 @@ export default function PoolDetailPage() {
 
   if (!pool) return <div>Pool not found</div>;
 
-  const isLivePool = pool.contractAddress === DLMM_CONTRACT_ID;
+  const isLivePool = pool.category === "dlmm" && pool.dlmmPoolId !== undefined;
 
   return (
     <div className="space-y-6">
@@ -66,8 +65,12 @@ export default function PoolDetailPage() {
 
       {!isLivePool && (
         <div className="text-xs text-muted-foreground bg-secondary/30 border border-border rounded-md px-3 py-2">
-          This pool's data is illustrative. Real on-chain liquidity actions are only wired to the live testnet pool (XLM/TESTUSD).
+          This pool's data is illustrative. Real on-chain liquidity actions are only wired to DLMM registry pools.
         </div>
+      )}
+
+      {isLivePool && pool.isLaunchPool && pool.activationTs !== undefined && (
+        <LaunchCountdown activationTs={pool.activationTs} />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -94,6 +97,23 @@ export default function PoolDetailPage() {
           </div>
         </Card>
       </div>
+
+      {pool.category === "dlmm" && pool.lpFeeBps !== undefined && pool.protocolFeeBps !== undefined && (
+        <Card className="p-4 bg-card border-border">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Fee split</span>
+            <span className="font-mono">
+              <span className="text-foreground font-semibold">{(pool.lpFeeBps / 100).toFixed(1)}% LPs</span>
+              <span className="text-muted-foreground mx-1.5">/</span>
+              <span className="text-foreground font-semibold">{(pool.protocolFeeBps / 100).toFixed(1)}% Protocol</span>
+            </span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden mt-2 flex">
+            <div className="h-full bg-primary" style={{ width: `${pool.lpFeeBps / 100}%` }} />
+            <div className="h-full bg-amber-500/70" style={{ width: `${pool.protocolFeeBps / 100}%` }} />
+          </div>
+        </Card>
+      )}
 
       <Card className="p-6 bg-card border-border">
         <h3 className="text-lg font-bold mb-4">Liquidity Distribution</h3>
@@ -128,9 +148,34 @@ export default function PoolDetailPage() {
           binId={pool.activeBinId}
           tokenXSymbol={pool.tokenX.symbol}
           tokenYSymbol={pool.tokenY.symbol}
+          poolId={pool.dlmmPoolId}
           onSuccess={() => refetchBins()}
         />
       )}
+    </div>
+  );
+}
+
+function LaunchCountdown({ activationTs }: { activationTs: number }) {
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remaining = Math.max(0, activationTs - now);
+  const hh = Math.floor(remaining / 3600);
+  const mm = Math.floor((remaining % 3600) / 60);
+  const ss = remaining % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  return (
+    <div className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-md px-3 py-2 flex items-center justify-between">
+      <span>Launch Pool — swaps are gated until activation (anti-snipe). Liquidity can be added now.</span>
+      <span className="font-mono font-semibold shrink-0 ml-3">
+        {remaining > 0 ? `${pad(hh)}:${pad(mm)}:${pad(ss)}` : "Activating…"}
+      </span>
     </div>
   );
 }

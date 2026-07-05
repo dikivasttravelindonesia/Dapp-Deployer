@@ -14,6 +14,7 @@ interface RemoveTarget {
   binId: number;
   tokenXSymbol: string;
   tokenYSymbol: string;
+  poolId?: number;
 }
 
 export default function PositionsPage() {
@@ -182,7 +183,7 @@ export default function PositionsPage() {
                     <Button
                       className="flex-1 h-8 text-xs"
                       variant="outline"
-                      onClick={() => setRemoveTarget({ binId, tokenXSymbol, tokenYSymbol })}
+                      onClick={() => setRemoveTarget({ binId, tokenXSymbol, tokenYSymbol, poolId: pos.pool?.dlmmPoolId })}
                       data-testid={`button-remove-${pos.id}`}
                     >
                       Remove Liquidity
@@ -205,6 +206,7 @@ export default function PositionsPage() {
           binId={removeTarget.binId}
           tokenXSymbol={removeTarget.tokenXSymbol}
           tokenYSymbol={removeTarget.tokenYSymbol}
+          poolId={removeTarget.poolId}
           onSuccess={refetchPositions}
         />
       )}
