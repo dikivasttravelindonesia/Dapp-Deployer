@@ -93,7 +93,13 @@ Instead:
 - `artifacts/api-server/api/index.mjs` is a plain-JS (not TS) Vercel serverless entry point that imports the pre-bundled `dist/app.mjs` and exports it as a `(req, res) => void` handler — since it's already plain JS by the time Vercel's function builder sees it, there's nothing left for Vercel to type-check.
 - `artifacts/api-server/vercel.json` sets `installCommand`/`buildCommand` to `cd ../.. && pnpm ...` (so pnpm resolves the workspace from the repo root) and rewrites `/api/(.*)` → `/api` so all API subpaths hit the one function.
 
-To deploy on Vercel: create a project pointed at this GitHub repo, set **Root Directory** to `artifacts/api-server`, and enable the monorepo "include files outside the Root Directory" option if prompted (needed so pnpm can see `pnpm-workspace.yaml` and sibling `lib/*` packages).
+To deploy on Vercel: create a project pointed at this GitHub repo, set **Root Directory** to `artifacts/api-server`, set **Framework Preset** to "Other" (auto-detected "Express" fights with our custom setup), and enable the monorepo "include files outside the Root Directory" option if prompted (needed so pnpm can see `pnpm-workspace.yaml` and sibling `lib/*` packages).
+
+### Serving the frontend (`stellar-dlmm`) from the same Vercel project/domain
+
+`vercel.json`'s `buildCommand` also builds `@workspace/stellar-dlmm` (with `BASE_PATH=/` so it's rooted at the domain root instead of an artifact sub-path) and copies its `dist/public` output into `artifacts/api-server/public` — the `outputDirectory` Vercel serves as static files. A catch-all rewrite (`/(.*)` → `/index.html`, listed after the `/api` rewrite) gives the client-side router (wouter) SPA fallback behavior; Vercel serves real static files (JS/CSS/images) directly without invoking rewrites, so this doesn't break asset loading.
+
+The frontend's `VITE_*` build-time env vars (Stellar network/contract IDs — public, not secret) live in `vercel.json`'s `build.env` block instead of `artifacts/stellar-dlmm/.env`, because that `.env` file is gitignored and never reaches a GitHub-sourced Vercel build. Keep both in sync when contract IDs change (e.g. after a redeploy).
 
 ## Gotchas
 
