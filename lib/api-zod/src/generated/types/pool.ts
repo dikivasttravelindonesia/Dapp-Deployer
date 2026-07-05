@@ -5,10 +5,13 @@
  * Stellar DLMM Liquidity Protocol API
  * OpenAPI spec version: 0.1.0
  */
+import type { PoolCategory } from './poolCategory';
 import type { Token } from './token';
 
 export interface Pool {
   id: string;
+  /** dlmm = our on-chain DLMM contract; amm = native Stellar DEX liquidity pool (aggregated from Horizon) */
+  category: PoolCategory;
   tokenX: Token;
   tokenY: Token;
   tvl: number;
@@ -19,4 +22,12 @@ export interface Pool {
   activeBinId: number;
   currentPrice?: number;
   fee?: number;
+  reserveX?: number;
+  reserveY?: number;
+  /** Total LP shares/pool shares outstanding (AMM pools from Horizon) */
+  totalShares?: number;
+  /** Link to view an AMM pool on stellar.expert */
+  externalUrl?: string;
+  /** False when 24h volume/APR is not indexed for this pool (shown as — in UI) */
+  volumeAvailable?: boolean;
 }

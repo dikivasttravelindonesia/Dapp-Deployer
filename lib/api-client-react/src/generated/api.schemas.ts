@@ -23,8 +23,21 @@ export interface Token {
   logoUrl: string;
 }
 
+/**
+ * dlmm = our on-chain DLMM contract; amm = native Stellar DEX liquidity pool (aggregated from Horizon)
+ */
+export type PoolCategory = typeof PoolCategory[keyof typeof PoolCategory];
+
+
+export const PoolCategory = {
+  dlmm: 'dlmm',
+  amm: 'amm',
+} as const;
+
 export interface Pool {
   id: string;
+  /** dlmm = our on-chain DLMM contract; amm = native Stellar DEX liquidity pool (aggregated from Horizon) */
+  category: PoolCategory;
   tokenX: Token;
   tokenY: Token;
   tvl: number;
@@ -35,10 +48,27 @@ export interface Pool {
   activeBinId: number;
   currentPrice?: number;
   fee?: number;
+  reserveX?: number;
+  reserveY?: number;
+  /** Total LP shares/pool shares outstanding (AMM pools from Horizon) */
+  totalShares?: number;
+  /** Link to view an AMM pool on stellar.expert */
+  externalUrl?: string;
+  /** False when 24h volume/APR is not indexed for this pool (shown as — in UI) */
+  volumeAvailable?: boolean;
 }
+
+export type PoolDetailCategory = typeof PoolDetailCategory[keyof typeof PoolDetailCategory];
+
+
+export const PoolDetailCategory = {
+  dlmm: 'dlmm',
+  amm: 'amm',
+} as const;
 
 export interface PoolDetail {
   id: string;
+  category: PoolDetailCategory;
   tokenX: Token;
   tokenY: Token;
   tvl: number;
@@ -53,6 +83,9 @@ export interface PoolDetail {
   reserveY: number;
   totalBins: number;
   contractAddress?: string;
+  totalShares?: number;
+  externalUrl?: string;
+  volumeAvailable?: boolean;
 }
 
 export interface Bin {
@@ -166,6 +199,10 @@ export interface Position {
   address: string;
   binRangeLow: number;
   binRangeHigh: number;
+  /** The single bin this position occupies (DLMM positions are per-bin) */
+  binId?: number;
+  /** LP shares held in the bin */
+  shares?: number;
   liquidityX: number;
   liquidityY: number;
   valueUsd: number;

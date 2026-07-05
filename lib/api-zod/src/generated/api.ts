@@ -26,6 +26,7 @@ export const ListPoolsQueryParams = zod.object({
 
 export const ListPoolsResponseItem = zod.object({
   "id": zod.string(),
+  "category": zod.enum(['dlmm', 'amm']).describe('dlmm = our on-chain DLMM contract; amm = native Stellar DEX liquidity pool (aggregated from Horizon)'),
   "tokenX": zod.object({
   "symbol": zod.string(),
   "name": zod.string(),
@@ -51,7 +52,12 @@ export const ListPoolsResponseItem = zod.object({
   "binStep": zod.number(),
   "activeBinId": zod.number(),
   "currentPrice": zod.number().optional(),
-  "fee": zod.number().optional()
+  "fee": zod.number().optional(),
+  "reserveX": zod.number().optional(),
+  "reserveY": zod.number().optional(),
+  "totalShares": zod.number().optional().describe('Total LP shares\/pool shares outstanding (AMM pools from Horizon)'),
+  "externalUrl": zod.string().optional().describe('Link to view an AMM pool on stellar.expert'),
+  "volumeAvailable": zod.boolean().optional().describe('False when 24h volume\/APR is not indexed for this pool (shown as — in UI)')
 })
 export const ListPoolsResponse = zod.array(ListPoolsResponseItem)
 
@@ -65,6 +71,7 @@ export const GetPoolParams = zod.object({
 
 export const GetPoolResponse = zod.object({
   "id": zod.string(),
+  "category": zod.enum(['dlmm', 'amm']),
   "tokenX": zod.object({
   "symbol": zod.string(),
   "name": zod.string(),
@@ -94,7 +101,10 @@ export const GetPoolResponse = zod.object({
   "reserveX": zod.number(),
   "reserveY": zod.number(),
   "totalBins": zod.number(),
-  "contractAddress": zod.string().optional()
+  "contractAddress": zod.string().optional(),
+  "totalShares": zod.number().optional(),
+  "externalUrl": zod.string().optional(),
+  "volumeAvailable": zod.boolean().optional()
 })
 
 
@@ -280,6 +290,7 @@ export const GetUserPositionsResponseItem = zod.object({
   "poolId": zod.string(),
   "pool": zod.object({
   "id": zod.string(),
+  "category": zod.enum(['dlmm', 'amm']).describe('dlmm = our on-chain DLMM contract; amm = native Stellar DEX liquidity pool (aggregated from Horizon)'),
   "tokenX": zod.object({
   "symbol": zod.string(),
   "name": zod.string(),
@@ -305,11 +316,18 @@ export const GetUserPositionsResponseItem = zod.object({
   "binStep": zod.number(),
   "activeBinId": zod.number(),
   "currentPrice": zod.number().optional(),
-  "fee": zod.number().optional()
+  "fee": zod.number().optional(),
+  "reserveX": zod.number().optional(),
+  "reserveY": zod.number().optional(),
+  "totalShares": zod.number().optional().describe('Total LP shares\/pool shares outstanding (AMM pools from Horizon)'),
+  "externalUrl": zod.string().optional().describe('Link to view an AMM pool on stellar.expert'),
+  "volumeAvailable": zod.boolean().optional().describe('False when 24h volume\/APR is not indexed for this pool (shown as — in UI)')
 }).optional(),
   "address": zod.string(),
   "binRangeLow": zod.number(),
   "binRangeHigh": zod.number(),
+  "binId": zod.number().optional().describe('The single bin this position occupies (DLMM positions are per-bin)'),
+  "shares": zod.number().optional().describe('LP shares held in the bin'),
   "liquidityX": zod.number(),
   "liquidityY": zod.number(),
   "valueUsd": zod.number(),

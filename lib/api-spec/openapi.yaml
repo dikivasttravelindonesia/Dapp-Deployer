@@ -279,10 +279,14 @@ components:
 
     Pool:
       type: object
-      required: [id, tokenX, tokenY, tvl, volume24h, fees24h, apr, binStep, activeBinId]
+      required: [id, tokenX, tokenY, tvl, volume24h, fees24h, apr, binStep, activeBinId, category]
       properties:
         id:
           type: string
+        category:
+          type: string
+          enum: [dlmm, amm]
+          description: "dlmm = our on-chain DLMM contract; amm = native Stellar DEX liquidity pool (aggregated from Horizon)"
         tokenX:
           $ref: "#/components/schemas/Token"
         tokenY:
@@ -303,13 +307,29 @@ components:
           type: number
         fee:
           type: number
+        reserveX:
+          type: number
+        reserveY:
+          type: number
+        totalShares:
+          type: number
+          description: "Total LP shares/pool shares outstanding (AMM pools from Horizon)"
+        externalUrl:
+          type: string
+          description: "Link to view an AMM pool on stellar.expert"
+        volumeAvailable:
+          type: boolean
+          description: "False when 24h volume/APR is not indexed for this pool (shown as — in UI)"
 
     PoolDetail:
       type: object
-      required: [id, tokenX, tokenY, tvl, volume24h, fees24h, apr, binStep, activeBinId, currentPrice, fee, reserveX, reserveY, totalBins]
+      required: [id, tokenX, tokenY, tvl, volume24h, fees24h, apr, binStep, activeBinId, currentPrice, fee, reserveX, reserveY, totalBins, category]
       properties:
         id:
           type: string
+        category:
+          type: string
+          enum: [dlmm, amm]
         tokenX:
           $ref: "#/components/schemas/Token"
         tokenY:
@@ -338,6 +358,12 @@ components:
           type: integer
         contractAddress:
           type: string
+        totalShares:
+          type: number
+        externalUrl:
+          type: string
+        volumeAvailable:
+          type: boolean
 
     Bin:
       type: object
@@ -526,6 +552,12 @@ components:
           type: integer
         binRangeHigh:
           type: integer
+        binId:
+          type: integer
+          description: "The single bin this position occupies (DLMM positions are per-bin)"
+        shares:
+          type: number
+          description: "LP shares held in the bin"
         liquidityX:
           type: number
         liquidityY:

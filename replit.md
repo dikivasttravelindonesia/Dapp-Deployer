@@ -47,9 +47,9 @@ A full-stack DeFi boilerplate for a Dynamic Liquidity Market Maker (DLMM) on the
 ## Product
 
 - **Swap** (`/swap`): Token pair selector, real-time quote via debounced mutation, price impact indicator, slippage settings, routing display, recent tx feed
-- **Pools** (`/pools`): Sortable/searchable pool table with protocol summary stats bar
+- **Pools** (`/pools`): REAL aggregator, split into two categories — **DLMM** (our on-chain contract pool, TVL/price read live via RPC sim) and **AMM from Stellar DEX** (native-XLM constant-product pools aggregated live from Horizon `/liquidity_pools`). Category filter (All/DLMM/AMM) + search. HONESTY: only TVL and price are real; 24h volume/fees/APR are not indexed on testnet and render as `—` (`volumeAvailable=false`), never fabricated. DLMM rows → `Manage` (`/pools/:id`); AMM rows → `View` (external link to stellar.expert).
 - **Pool Detail** (`/pools/:poolId`): DLMM bin distribution chart (Recharts), TVL/volume/fees history chart, Add/Remove liquidity modals with strategy presets (Spot, Curve, Bid-Ask)
-- **Positions** (`/positions`): LP position cards with bin range, unrealized fees, strategy badge
+- **Positions** (`/positions`): REAL per-bin LP positions read live from the DLMM contract for the connected wallet's address (no mock/demo fallback — requires wallet connect). Each card shows bin id, LP shares, token reserves, USD value. `Remove Liquidity` reuses `LiquidityModal` (mode=remove) to sign+submit a real `remove_liquidity_bin` tx. No fabricated fees/APR/strategy — `unrealizedFees` is not indexed on-chain so claim-fees UI was removed.
 - **Analytics** (`/analytics`): Protocol-wide TVL/volume charts, top pools, recent transaction feed
 
 ## Smart Contracts (Soroban / Rust) — LIVE on Stellar Testnet
@@ -68,7 +68,7 @@ stellar contract deploy --wasm <optimized>.wasm --network testnet --source <depl
 ```
 
 **Deployed testnet contract IDs** (network configurable via `.env`, currently testnet):
-- DLMM: `CCTX4QBFZHMJLQSLWEN73553DQMOKFZADZQM2G2E7WBPFR4ITPVOKG4X`
+- DLMM: `CAWVYZS7FXVSOXTE7DBUULYOHCWVA2RML4CHXOETGS32FOBCOZ7YH4RS` (v2 — per-user LP position tracking)
 - Vault: `CCDVBRMT3BI65JV2C7AQJOSIGT76MNNTXSVYDKGXKPBSOKVWQRGKU7VI`
 - Math: `CB7U2EL6L4AR2IWANOSXDYVHWL3D3PD3XOZU6PUA4MDAVWCOT3AAVX4Z`
 - Native XLM SAC: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`

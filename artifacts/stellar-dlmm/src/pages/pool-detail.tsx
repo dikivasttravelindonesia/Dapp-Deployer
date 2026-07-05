@@ -77,15 +77,21 @@ export default function PoolDetailPage() {
         </Card>
         <Card className="p-4 bg-card border-border">
           <div className="text-sm text-muted-foreground">24h Volume</div>
-          <div className="text-2xl font-mono font-bold">${pool.volume24h.toLocaleString()}</div>
+          <div className="text-2xl font-mono font-bold">
+            {pool.volumeAvailable ? `$${pool.volume24h.toLocaleString()}` : <span className="text-muted-foreground">—</span>}
+          </div>
         </Card>
         <Card className="p-4 bg-card border-border">
           <div className="text-sm text-muted-foreground">24h Fees</div>
-          <div className="text-2xl font-mono font-bold">${pool.fees24h.toLocaleString()}</div>
+          <div className="text-2xl font-mono font-bold">
+            {pool.volumeAvailable ? `$${pool.fees24h.toLocaleString()}` : <span className="text-muted-foreground">—</span>}
+          </div>
         </Card>
         <Card className="p-4 bg-card border-border">
           <div className="text-sm text-muted-foreground">APR</div>
-          <div className="text-2xl font-mono font-bold text-green-500">{pool.apr.toFixed(2)}%</div>
+          <div className="text-2xl font-mono font-bold text-green-500">
+            {pool.volumeAvailable ? `${pool.apr.toFixed(2)}%` : <span className="text-muted-foreground">—</span>}
+          </div>
         </Card>
       </div>
 

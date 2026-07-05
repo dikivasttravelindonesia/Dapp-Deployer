@@ -75,7 +75,7 @@ router.get("/tokens", (req, res) => {
     req.log.error({ error: parsed.error }, "Token validation failed");
     return res.status(500).json({ error: "Internal server error" });
   }
-  res.json(parsed.data);
+  return res.json(parsed.data);
 });
 
 export default router;
