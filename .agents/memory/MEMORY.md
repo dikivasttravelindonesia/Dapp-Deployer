@@ -4,3 +4,4 @@
 - [Radix Slider e2e test flakiness](radix-slider-e2e-testing.md) — testing-agent drag/click on a Radix Slider can land on an unintended value before key presses; verify with a narrow, single-action test before trusting a "bug".
 - [One-sided AMM bin deposits](dlmm-one-sided-bin-deposits.md) — DLMM-style bin contracts often reject deposits with both tokens nonzero on off-active bins; frontend multi-bin split logic must zero out the disallowed side per bin, not just weight totals evenly.
 - [Reading recent contract activity via getEvents](soroban-getevents-recent-activity.md) — use RPC getEvents (not simulateTransaction) for history/feeds; mind the ~1-day retention window and poll rather than treat as realtime.
+- [DLMM bin-step traversal direction](dlmm-bin-step-direction.md) — in one-sided-liquidity bin AMMs, verify the active-bin search direction matches which side actually holds the needed token, or swaps silently return zero output with no error.

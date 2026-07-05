@@ -72,7 +72,7 @@ stellar contract deploy --wasm <optimized>.wasm --network testnet --source <depl
 ```
 
 **Deployed testnet contract IDs** (network configurable via `.env`, currently testnet):
-- DLMM: `CCAP3SFH2TTSON2ELHCRRUZBXGL4CVWUME33JAATFYX4QSXSGQH2Q2TG` (v4 — multi-pool registry + fee split + launch pools + `simulate_swap` activation-gate parity fix; replaces the old single-pool `CAWVYZS7...` contract and the interim v3 `CCCQFEKW...` contract)
+- DLMM: `CCW5MVYJFJPBJNJY7GN6BHC5BQR47RXVIM2T2X4F3YSQC7MQ7J4GNESH` (v5 — fixed a critical bin step-direction bug in `swap_exact_in_bin`/`simulate_swap`: the active-bin traversal moved in the wrong direction when a bin ran out of liquidity, walking the pool's active bin into permanently empty territory instead of toward the bins that actually hold the needed reserves, silently returning `amount_out=0` on all subsequent swaps. Bins above the active bin hold only token X, bins below hold only token Y — buying Y (x_to_y=true) must step toward lower bins, selling Y (x_to_y=false) toward higher bins; the old code had this inverted. Replaces the v4 `CCAP3SFH...` contract, whose pool 0/1 active-bin pointers were unrecoverably stranded by this bug)
 - Vault: `CCDVBRMT3BI65JV2C7AQJOSIGT76MNNTXSVYDKGXKPBSOKVWQRGKU7VI`
 - Math: `CB7U2EL6L4AR2IWANOSXDYVHWL3D3PD3XOZU6PUA4MDAVWCOT3AAVX4Z`
 - Native XLM SAC: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`

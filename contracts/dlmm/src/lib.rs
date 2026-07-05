@@ -670,9 +670,13 @@ impl DlmmContract {
         let mut total_protocol_fee: i128 = 0;
         let mut bins_crossed: u32 = 0;
 
-        // Step direction: buying Y (x_to_y=true) → move right (higher bins).
-        // Selling Y (x_to_y=false) → move left (lower bins).
-        let step: i32 = if x_to_y { 1 } else { -1 };
+        // Step direction: bins above active hold token X only, bins below
+        // hold token Y only (see `add_liquidity_bin`'s one-sided rule).
+        // Buying Y (x_to_y=true, spending X) drains Y reserves, which sit at
+        // and below the active bin → move left (lower bins) once a bin is
+        // exhausted. Selling Y (x_to_y=false, spending Y) drains X reserves,
+        // which sit at and above the active bin → move right (higher bins).
+        let step: i32 = if x_to_y { -1 } else { 1 };
 
         // Traverse up to 50 bins to cap CPU budget.
         for _ in 0..50 {
@@ -901,7 +905,9 @@ impl DlmmContract {
         let mut total_fee: i128 = 0;
         let mut total_protocol_fee: i128 = 0;
         let mut bins_crossed: u32 = 0;
-        let step: i32 = if x_to_y { 1 } else { -1 };
+        // Must mirror `swap_exact_in_bin`'s step direction exactly, or quotes
+        // will diverge from the actual on-chain swap outcome.
+        let step: i32 = if x_to_y { -1 } else { 1 };
 
         for _ in 0..50 {
             if remaining == 0 {
