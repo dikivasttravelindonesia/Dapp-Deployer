@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { useListTransactions } from "@workspace/api-client-react";
+import { useGetPoolRecentSwaps } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowDownUp, Settings, AlertTriangle, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowDownUp, Settings, AlertTriangle, CheckCircle2, ChevronDown, Loader2, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useWallet } from "@/contexts/wallet";
 import { WalletModal } from "@/components/wallet-modal";
 import { useToast } from "@/hooks/use-toast";
-import { DEMO_POOL_TOKENS } from "@/lib/contracts";
+import { DEMO_POOL_TOKENS, DEFAULT_POOL_ID } from "@/lib/contracts";
 import { displayToStroops, stroopsToDisplay } from "@/lib/stellar";
 import {
   getOnChainSwapQuote,
@@ -18,10 +18,11 @@ import {
 } from "@/lib/dlmm-client";
 
 const SLIPPAGE_PRESETS = ["0.1", "0.5", "1.0"];
+const DEFAULT_POOL_RECORD_ID = `dlmm-${DEFAULT_POOL_ID}`;
 
 export default function SwapPage() {
   const tokens = DEMO_POOL_TOKENS;
-  const { data: transactions, isLoading: txLoading } = useListTransactions({ type: "swap", limit: 8 });
+  const { data: recentSwaps, isLoading: swapsLoading } = useGetPoolRecentSwaps(DEFAULT_POOL_RECORD_ID);
   const wallet = useWallet();
   const { toast } = useToast();
 
@@ -44,6 +45,8 @@ export default function SwapPage() {
   const effectiveSlippage = customSlippage || slippage;
   const xToY = tokenInId === tokens[0].address;
 
+  const tokenInBalance = tokenIn ? getWalletTokenBalance(wallet, tokenIn.symbol) : null;
+
   // Debounced REAL on-chain quote via simulate_swap (read-only contract call)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -64,6 +67,11 @@ export default function SwapPage() {
     }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [tokenInId, tokenOutId, amountIn, xToY]);
+
+  function handleMaxAmount() {
+    if (!tokenInBalance) return;
+    setAmountIn(tokenInBalance);
+  }
 
   function handleFlip() {
     setTokenInId(tokenOutId);
@@ -181,6 +189,22 @@ export default function SwapPage() {
               testId="select-token-in"
             />
           </div>
+          {wallet.connected && (
+            <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground pt-0.5">
+              <span className="font-mono tabular-nums" data-testid="text-balance-in">
+                Balance: {tokenInBalance ?? "0.0000"} {tokenIn?.symbol ?? ""}
+              </span>
+              <button
+                type="button"
+                onClick={handleMaxAmount}
+                disabled={!tokenInBalance || parseFloat(tokenInBalance) <= 0}
+                className="font-semibold text-primary hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                data-testid="button-max-amount"
+              >
+                Max
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Flip */}
@@ -267,40 +291,43 @@ export default function SwapPage() {
         )}
       </Card>
 
-      {/* Connected wallet banner */}
-      {wallet.connected && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-green-500/5 border border-green-500/20 rounded-md px-3 py-2">
-          <div className="w-2 h-2 rounded-full bg-green-400" />
-          <span className="font-mono">{wallet.address}</span>
-          {wallet.xlmBalance && <span className="ml-auto tabular-nums">{wallet.xlmBalance} XLM</span>}
-        </div>
-      )}
-
-      {/* Recent Transactions */}
+      {/* Recent Swaps — real SWAP events read from the DLMM contract (not realtime) */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Swaps</h3>
-        {txLoading ? (
+        {swapsLoading ? (
           <div className="space-y-2">
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}
           </div>
-        ) : (
+        ) : recentSwaps && recentSwaps.length > 0 ? (
           <div className="space-y-1.5">
-            {transactions?.map((tx) => (
-              <div
-                key={tx.id}
-                className="flex justify-between items-center px-3 py-2.5 rounded-md bg-card border border-border text-sm"
-                data-testid={`row-tx-${tx.id}`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground">{tx.txHash.slice(0, 8)}…</span>
-                  <span className="text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">SWAP</span>
+            {recentSwaps.map((swap) => {
+              const inSymbol = swap.xToY ? tokens[0].symbol : tokens[1].symbol;
+              const outSymbol = swap.xToY ? tokens[1].symbol : tokens[0].symbol;
+              return (
+                <div
+                  key={swap.txHash}
+                  className="flex justify-between items-center px-3 py-2.5 rounded-md bg-card border border-border text-sm"
+                  data-testid={`row-swap-${swap.txHash}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {swap.xToY ? (
+                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    ) : (
+                      <ArrowDownRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="font-mono text-xs text-muted-foreground">{swap.txHash.slice(0, 8)}…</span>
+                  </div>
+                  <span className="font-mono tabular-nums text-xs text-right">
+                    {stroopsToDisplay(BigInt(swap.amountIn))} {inSymbol}
+                    <span className="text-muted-foreground"> → </span>
+                    {stroopsToDisplay(BigInt(swap.amountOut))} {outSymbol}
+                  </span>
                 </div>
-                <span className="font-mono text-green-400 tabular-nums">
-                  +${tx.valueUsd?.toLocaleString("en", { maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
+        ) : (
+          <p className="text-xs text-muted-foreground px-1">No recent on-chain swaps found for this pool.</p>
         )}
       </div>
 
@@ -312,6 +339,18 @@ export default function SwapPage() {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Looks up the connected wallet's balance for a token symbol (XLM is tracked
+ * separately from Horizon's non-native balance list). Returns null if the
+ * wallet isn't connected or holds no trustline/balance for that asset. */
+function getWalletTokenBalance(
+  wallet: { xlmBalance: string | null; tokenBalances: Array<{ asset: string; balance: string }> },
+  symbol: string
+): string | null {
+  if (symbol === "XLM") return wallet.xlmBalance;
+  const match = wallet.tokenBalances.find((b) => b.asset === symbol);
+  return match ? match.balance : null;
+}
 
 function QuoteRow({ label, value, valueCls = "" }: { label: string; value: string; valueCls?: string }) {
   return (

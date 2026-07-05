@@ -24,6 +24,7 @@ export * from './poolStatsPoint';
 export * from './position';
 export * from './positionStrategy';
 export * from './protocolSummary';
+export * from './recentSwap';
 export * from './routeHop';
 export * from './swapQuote';
 export * from './swapQuoteInput';

@@ -252,6 +252,33 @@ paths:
                 items:
                   $ref: "#/components/schemas/Transaction"
 
+  /pools/{poolId}/swaps:
+    get:
+      operationId: getPoolRecentSwaps
+      tags: [pools]
+      summary: Recent swap events read directly from the DLMM contract (on-chain, cached briefly)
+      parameters:
+        - name: poolId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recent on-chain swaps for this pool
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentSwap"
+        "404":
+          description: Pool not found or not a DLMM registry pool
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /positions/{address}:
     get:
       operationId: getUserPositions
@@ -580,6 +607,29 @@ components:
           type: number
         amountOut:
           type: number
+
+    RecentSwap:
+      type: object
+      required: [txHash, timestamp, address, xToY, amountIn, amountOut, feePaid]
+      properties:
+        txHash:
+          type: string
+        timestamp:
+          type: string
+        address:
+          type: string
+        xToY:
+          type: boolean
+          description: "true = tokenX sold for tokenY, false = tokenY sold for tokenX"
+        amountIn:
+          type: string
+          description: "Raw stroops (i128), as a string to avoid precision loss"
+        amountOut:
+          type: string
+          description: "Raw stroops (i128), as a string to avoid precision loss"
+        feePaid:
+          type: string
+          description: "Raw stroops (i128), as a string to avoid precision loss"
 
     Transaction:
       type: object

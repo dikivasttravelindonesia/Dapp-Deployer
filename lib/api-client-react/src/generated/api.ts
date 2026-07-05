@@ -32,6 +32,7 @@ import type {
   PoolStats,
   Position,
   ProtocolSummary,
+  RecentSwap,
   SwapQuote,
   SwapQuoteInput,
   SwapRoute,
@@ -895,6 +896,83 @@ export function useListTransactions<TData = Awaited<ReturnType<typeof listTransa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListTransactionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPoolRecentSwapsUrl = (poolId: string,) => {
+
+
+
+
+  return `/api/pools/${poolId}/swaps`
+}
+
+/**
+ * @summary Recent swap events read directly from the DLMM contract (on-chain, cached briefly)
+ */
+export const getPoolRecentSwaps = async (poolId: string, options?: RequestInit): Promise<RecentSwap[]> => {
+
+  return customFetch<RecentSwap[]>(getGetPoolRecentSwapsUrl(poolId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPoolRecentSwapsQueryKey = (poolId: string,) => {
+    return [
+    `/api/pools/${poolId}/swaps`
+    ] as const;
+    }
+
+
+export const getGetPoolRecentSwapsQueryOptions = <TData = Awaited<ReturnType<typeof getPoolRecentSwaps>>, TError = ErrorType<ErrorResponse>>(poolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPoolRecentSwaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPoolRecentSwapsQueryKey(poolId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPoolRecentSwaps>>> = ({ signal }) => getPoolRecentSwaps(poolId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: poolId !== null && poolId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPoolRecentSwaps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPoolRecentSwapsQueryResult = NonNullable<Awaited<ReturnType<typeof getPoolRecentSwaps>>>
+export type GetPoolRecentSwapsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Recent swap events read directly from the DLMM contract (on-chain, cached briefly)
+ */
+
+export function useGetPoolRecentSwaps<TData = Awaited<ReturnType<typeof getPoolRecentSwaps>>, TError = ErrorType<ErrorResponse>>(
+ poolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPoolRecentSwaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPoolRecentSwapsQueryOptions(poolId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

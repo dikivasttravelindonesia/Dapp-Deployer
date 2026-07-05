@@ -457,6 +457,93 @@ export async function getUserPositions(address: string): Promise<PositionRecord[
 }
 
 // ---------------------------------------------------------------------------
+// Recent swaps — real SWAP events published by swap_exact_in_bin, read via
+// Soroban RPC getEvents. Not realtime: cached briefly and fetched on demand.
+// ---------------------------------------------------------------------------
+
+export interface RecentSwapRecord {
+  txHash: string;
+  timestamp: string;
+  address: string;
+  xToY: boolean;
+  amountIn: string;
+  amountOut: string;
+  feePaid: string;
+}
+
+// Public testnet RPC providers only retain getEvents history for roughly a
+// day; stay comfortably inside that window rather than requesting the full
+// ledger range.
+const RECENT_SWAP_LOOKBACK_LEDGERS = 9_000;
+
+async function readRecentSwaps(poolId: number): Promise<RecentSwapRecord[]> {
+  const server = getRpc();
+  const latest = await server.getLatestLedger();
+  const startLedger = Math.max(1, latest.sequence - RECENT_SWAP_LOOKBACK_LEDGERS);
+  const swapTopic = xdr.ScVal.scvSymbol("SWAP").toXDR("base64");
+
+  const response = await server.getEvents({
+    startLedger,
+    filters: [
+      {
+        type: "contract",
+        contractIds: [DLMM_CONTRACT_ID],
+        topics: [[swapTopic, "*", "*"]],
+      },
+    ],
+    limit: 200,
+  });
+
+  const targetPoolId = String(poolId);
+  const swaps: RecentSwapRecord[] = [];
+  for (const evt of response.events) {
+    try {
+      const topics = evt.topic.map((t) => scValToNative(t)) as [unknown, bigint | number, boolean];
+      if (String(topics[1]) !== targetPoolId) continue;
+      const xToY = Boolean(topics[2]);
+      const [address, spent, totalOut, totalFee] = scValToNative(evt.value) as [
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+      ];
+      swaps.push({
+        txHash: evt.txHash,
+        timestamp: evt.ledgerClosedAt,
+        address,
+        xToY,
+        amountIn: String(spent),
+        amountOut: String(totalOut),
+        feePaid: String(totalFee),
+      });
+    } catch {
+      // Skip any event we can't decode rather than fail the whole request.
+    }
+  }
+
+  swaps.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return swaps.slice(0, 20);
+}
+
+const recentSwapsCache = new Map<number, ReturnType<typeof memoize<RecentSwapRecord[]>>>();
+function getRecentSwapsForPool(poolId: number): Promise<RecentSwapRecord[]> {
+  let cached = recentSwapsCache.get(poolId);
+  if (!cached) {
+    cached = memoize(30_000, () => readRecentSwaps(poolId));
+    recentSwapsCache.set(poolId, cached);
+  }
+  return cached();
+}
+
+/** Recent on-chain swaps for a `dlmm-<n>` pool record id, or null if it isn't a DLMM pool. */
+export async function getRecentSwaps(poolId: string): Promise<RecentSwapRecord[] | null> {
+  const dlmmId = parseDlmmPoolRecordId(poolId);
+  if (dlmmId === null) return null;
+  return getRecentSwapsForPool(dlmmId);
+}
+
+// ---------------------------------------------------------------------------
 // AMM pools (native Stellar DEX) — Horizon aggregator
 // ---------------------------------------------------------------------------
 

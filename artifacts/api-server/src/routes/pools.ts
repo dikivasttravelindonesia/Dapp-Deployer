@@ -6,6 +6,7 @@ import {
   GetPoolStatsResponse,
   GetProtocolSummaryResponse,
   GetUserPositionsResponse,
+  GetPoolRecentSwapsResponse,
 } from "@workspace/api-zod";
 import {
   getAllPools,
@@ -13,6 +14,7 @@ import {
   getPoolBins,
   getProtocolSummary,
   getUserPositions,
+  getRecentSwaps,
 } from "../lib/stellar-reader";
 
 const router = Router();
@@ -104,6 +106,26 @@ router.get("/pools/:poolId/bins", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to load bins");
     return res.status(502).json({ error: "Failed to load on-chain bin data" });
+  }
+});
+
+// GET /pools/:poolId/swaps — real SWAP events read live from the DLMM
+// contract via RPC getEvents (DLMM pools only; not realtime, briefly cached)
+router.get("/pools/:poolId/swaps", async (req, res) => {
+  try {
+    const swaps = await getRecentSwaps(req.params.poolId);
+    if (swaps === null) {
+      return res.status(404).json({ error: "Pool not found or not a DLMM registry pool" });
+    }
+    const parsed = GetPoolRecentSwapsResponse.safeParse(swaps);
+    if (!parsed.success) {
+      req.log.error({ error: parsed.error }, "Recent swaps validation failed");
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    return res.json(parsed.data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to load recent swaps");
+    return res.status(502).json({ error: "Failed to load on-chain swap events" });
   }
 });
 

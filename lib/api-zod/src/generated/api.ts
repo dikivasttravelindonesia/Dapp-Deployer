@@ -302,6 +302,25 @@ export const ListTransactionsResponse = zod.array(ListTransactionsResponseItem)
 
 
 /**
+ * @summary Recent swap events read directly from the DLMM contract (on-chain, cached briefly)
+ */
+export const GetPoolRecentSwapsParams = zod.object({
+  "poolId": zod.coerce.string()
+})
+
+export const GetPoolRecentSwapsResponseItem = zod.object({
+  "txHash": zod.string(),
+  "timestamp": zod.string(),
+  "address": zod.string(),
+  "xToY": zod.boolean().describe('true = tokenX sold for tokenY, false = tokenY sold for tokenX'),
+  "amountIn": zod.string().describe('Raw stroops (i128), as a string to avoid precision loss'),
+  "amountOut": zod.string().describe('Raw stroops (i128), as a string to avoid precision loss'),
+  "feePaid": zod.string().describe('Raw stroops (i128), as a string to avoid precision loss')
+})
+export const GetPoolRecentSwapsResponse = zod.array(GetPoolRecentSwapsResponseItem)
+
+
+/**
  * @summary Get all LP positions for a wallet address
  */
 export const GetUserPositionsParams = zod.object({
