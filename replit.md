@@ -84,6 +84,17 @@ All contract functions (initialize, create_pool, add_liquidity_bin, simulate_swa
 
 **Frontend integration**: `artifacts/stellar-dlmm/src/lib/contracts.ts` reads contract IDs/network/`DEFAULT_POOL_ID` from env (`VITE_STELLAR_NETWORK`, `VITE_DLMM_CONTRACT_ID`, etc). `src/lib/dlmm-client.ts` builds real unsigned transactions (swap quote via `simulate_swap`, add/remove liquidity, create_pool) using `rpc.Server.prepareTransaction`, threading a `poolId` param (defaulting to `DEFAULT_POOL_ID`) through every call so the same contract instance serves every pool; the UI signs via Freighter/Albedo (`wallet.tsx`) and submits+polls for confirmation. The Swap page (`/swap`) is fully wired to on-chain quotes and execution against the default pool. On the Pool Detail page, Add/Remove Liquidity activate for any pool with a `dlmmPoolId` (i.e. any pool registered in the contract via `create_pool`), not a single hardcoded pool. Positions and Analytics stay on computed backend data for stats not derivable purely on-chain (full protocol-wide indexing is out of scope for this demo).
 
+## Deploying `api-server` to Vercel (alternative to Replit deployment)
+
+Vercel's own Node.js function builder type-checks `.ts` files with its own `tsc` pass and does not understand this repo's pnpm-workspace TypeScript setup (`moduleResolution: "bundler"`, `workspace:*` packages resolved to raw `.ts` source) — pointing it directly at `src/app.ts` fails with spurious type errors (e.g. `pino-http` "not callable").
+
+Instead:
+- `build.mjs` also bundles `src/app.ts` (the bare Express app, no `app.listen()`) into plain JS at `dist/app.mjs` via esbuild, alongside the existing `dist/index.mjs` used by Replit's persistent server.
+- `artifacts/api-server/api/index.mjs` is a plain-JS (not TS) Vercel serverless entry point that imports the pre-bundled `dist/app.mjs` and exports it as a `(req, res) => void` handler — since it's already plain JS by the time Vercel's function builder sees it, there's nothing left for Vercel to type-check.
+- `artifacts/api-server/vercel.json` sets `installCommand`/`buildCommand` to `cd ../.. && pnpm ...` (so pnpm resolves the workspace from the repo root) and rewrites `/api/(.*)` → `/api` so all API subpaths hit the one function.
+
+To deploy on Vercel: create a project pointed at this GitHub repo, set **Root Directory** to `artifacts/api-server`, and enable the monorepo "include files outside the Root Directory" option if prompted (needed so pnpm can see `pnpm-workspace.yaml` and sibling `lib/*` packages).
+
 ## Gotchas
 
 - After any OpenAPI spec change, run codegen before modifying routes or frontend hooks.
