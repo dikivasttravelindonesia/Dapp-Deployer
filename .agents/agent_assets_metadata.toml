@@ -6,3 +6,9 @@ id = "xYGaBe45NFlSuAlCvWuBr"
 uri = "file://SMART_CONTRACT_GUIDE.md"
 type = "text"
 title = "Panduan Integrasi Smart Contract — Stellar DLMM"
+
+[[outputs]]
+id = "15PhrklW2SJWX4WORuHpi"
+uri = "file://PRESENTATION.md"
+type = "text"
+title = "StellarBin — Bahan Presentasi Juri (PRESENTATION.md)"

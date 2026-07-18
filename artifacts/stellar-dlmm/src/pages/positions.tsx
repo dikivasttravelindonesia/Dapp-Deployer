@@ -4,7 +4,14 @@ import { useGetUserPositions, getGetUserPositionsQueryKey } from "@workspace/api
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wallet, ChevronRight, Coins, Layers } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Wallet, ChevronRight, Coins, Layers, Sparkles, Info } from "lucide-react";
 import { useWallet } from "@/contexts/wallet";
 import { WalletModal } from "@/components/wallet-modal";
 import { LiquidityModal } from "@/components/liquidity-modal";
@@ -22,6 +29,7 @@ export default function PositionsPage() {
   const queryClient = useQueryClient();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
+  const [claimTarget, setClaimTarget] = useState<RemoveTarget | null>(null);
 
   const address = wallet.connected ? wallet.address ?? "" : "";
 
@@ -178,8 +186,17 @@ export default function PositionsPage() {
                     />
                   </div>
 
-                  {/* Action — real on-chain withdrawal */}
+                  {/* Action — real on-chain withdrawal + fee claim info */}
                   <div className="flex gap-2 mt-auto pt-1 border-t border-border">
+                    <Button
+                      className="flex-1 h-8 text-xs"
+                      variant="secondary"
+                      onClick={() => setClaimTarget({ binId, tokenXSymbol, tokenYSymbol, poolId: pos.pool?.dlmmPoolId })}
+                      data-testid={`button-claim-${pos.id}`}
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Claim Fees
+                    </Button>
                     <Button
                       className="flex-1 h-8 text-xs"
                       variant="outline"
@@ -197,6 +214,79 @@ export default function PositionsPage() {
       )}
 
       <WalletModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
+
+      {/* Claim Fees dialog — explains the embedded-fee mechanism and shortcuts to Remove */}
+      <Dialog open={!!claimTarget} onOpenChange={(o) => { if (!o) setClaimTarget(null); }}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-claim-fees">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Klaim Fee — Bin {claimTarget?.binId}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1 text-sm">
+            <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground">Bagaimana fee bekerja di DLMM?</p>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Di DLMM StellarBin, biaya swap <strong className="text-foreground">tidak</strong> disimpan
+                  sebagai saldo terpisah. Setiap fee langsung ditambahkan ke dalam{" "}
+                  <strong className="text-foreground">cadangan token (reserves) bin ini</strong> — sehingga
+                  nilai LP shares kamu otomatis bertambah setiap kali ada swap yang melewati bin ini.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Cara mengklaim fee yang sudah terkumpul
+              </p>
+              <ol className="text-xs text-muted-foreground space-y-1.5 list-none">
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</span>
+                  Klik <strong className="text-foreground mx-0.5">Remove Liquidity</strong> pada posisi ini
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
+                  Tanda tangani transaksi di wallet (Freighter/Albedo)
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
+                  Kamu menerima kembali <strong className="text-foreground">deposit awal + seluruh fee</strong> yang sudah terkumpul di bin ini, sesuai proporsi LP shares-mu
+                </li>
+              </ol>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground px-1">
+              Desain ini (fee embedded dalam reserves) adalah standar industri untuk DLMM — sama seperti yang diterapkan Meteora di Solana. Fee tidak pernah hilang; mereka hanya bisa diambil bersamaan dengan likuiditasmu.
+            </p>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setClaimTarget(null)}
+            >
+              Tutup
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => {
+                const target = claimTarget;
+                setClaimTarget(null);
+                setRemoveTarget(target);
+              }}
+              data-testid="button-claim-to-remove"
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              Remove &amp; Klaim Fee
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {removeTarget && (
         <LiquidityModal

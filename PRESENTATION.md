@@ -232,6 +232,191 @@ Halaman Pool Detail adalah **pusat manajemen untuk satu pool DLMM tertentu**. Di
 
 ---
 
+---
+
+## 6. Cara Kerja DLMM — Mekanisme & Contoh Perhitungan
+
+### Apa Itu Bin?
+
+Bayangkan harga sebuah aset seperti tangga. Setiap anak tangga adalah sebuah **bin** — rentang harga yang sempit dan tetap. Di dalam setiap bin, harga tidak berubah. Swap yang terjadi di satu bin menggunakan harga yang konsisten, sama seperti jual-beli di kurs tetap.
+
+Di StellarBin (pool XLM/TESTUSD dengan `bin_step = 25 bps = 0,25%`):
+
+```
+Bin ID │ Harga (TESTUSD per XLM) │ Isi Awal (setelah seeding)
+───────┼─────────────────────────┼────────────────────────────
+  +2   │ 1,0050                  │ 100 XLM  +   0 TESTUSD
+  +1   │ 1,0025                  │ 100 XLM  +   0 TESTUSD
+   0   │ 1,0000  ← ACTIVE BIN   │  50 XLM  +  50 TESTUSD
+  -1   │ 0,9975                  │   0 XLM  + 100 TESTUSD
+  -2   │ 0,9950                  │   0 XLM  + 100 TESTUSD
+```
+
+**Aturan bin:**
+- Bin **di atas** active bin → hanya menyimpan **Token X (XLM)** — siap dijual saat harga naik
+- Bin **di bawah** active bin → hanya menyimpan **Token Y (TESTUSD)** — siap dijual saat harga turun
+- **Active bin** → bisa menyimpan kedua token sekaligus
+
+**Rumus harga:**
+```
+Harga bin N = (1 + bin_step)^N
+Bin  0 = (1,0025)^0  = 1,0000 TESTUSD per XLM
+Bin +1 = (1,0025)^1  = 1,0025 TESTUSD per XLM
+Bin -1 = (1,0025)^-1 = 0,9975 TESTUSD per XLM
+```
+
+---
+
+### Contoh Perhitungan 1 — Swap XLM → TESTUSD
+
+> **Skenario:** Pengguna ingin menukar **120 XLM** menjadi TESTUSD.
+> Pool state: bin 0 (50 TESTUSD), bin -1 (100 TESTUSD), bin -2 (100 TESTUSD).
+> Base fee = 10 bps = **0,10%**.
+
+Ketika menjual XLM (membeli TESTUSD), kontrak menelusuri bin dari aktif ke bawah.
+
+**Tahap 1 — Bin 0 (harga 1,0000):**
+```
+Cadangan TESTUSD di bin 0 = 50 TESTUSD
+XLM yang dibutuhkan       = 50 / 1,0000 = 50 XLM
+Fee 0,10% dari 50 XLM    = 0,05 XLM
+  → LP portion (80%)      = 0,04 XLM  (tinggal di bin, menambah reserves)
+  → Protocol (20%)        = 0,01 XLM  (masuk treasury)
+Total XLM dipakai user    = 50 + 0,05 = 50,05 XLM
+TESTUSD diterima          = 50 TESTUSD
+XLM sisa untuk dilanjutkan = 120 - 50,05 = 69,95 XLM
+```
+
+**Tahap 2 — Bin -1 (harga 0,9975):**
+```
+Sisa XLM user             = 69,95 XLM
+Fee 0,10% dari 69,95      = 0,07 XLM
+XLM bersih (setelah fee)  = 69,95 - 0,07 = 69,88 XLM
+TESTUSD diterima          = 69,88 × 0,9975 = 69,70 TESTUSD
+  → LP portion (80%)      = 0,056 XLM tinggal di bin -1
+  → Protocol (20%)        = 0,014 XLM ke treasury
+```
+
+**Hasil akhir swap 120 XLM:**
+```
+┌─────────────────────────────────────────────────┐
+│  TESTUSD diterima  :  50 + 69,70  =  119,70     │
+│  Total fee dibayar :  0,05 + 0,07 =    0,12 XLM │
+│  Bins yang dilalui :  2 bins                    │
+│  Active bin akhir  :  -1                        │
+└─────────────────────────────────────────────────┘
+Effective price: 119,70 / 120 = 0,9975 TESTUSD per XLM
+```
+
+---
+
+### Contoh Perhitungan 2 — Menyediakan Likuiditas & Klaim Fee
+
+> **Skenario:** Alice dan Bob sama-sama menyetor TESTUSD ke **bin -1** (harga 0,9975).
+
+**Langkah 1 — Alice menyetor 100 TESTUSD:**
+```
+LP shares Alice  = 1.000.000 shares
+Total shares bin = 1.000.000
+Kepemilikan Alice = 100%
+```
+
+**Langkah 2 — Bob menyetor 100 TESTUSD:**
+```
+LP shares Bob    = 1.000.000 shares (sama, karena harga per share tetap)
+Total shares bin = 2.000.000
+Kepemilikan Alice = 1.000.000 / 2.000.000 = 50%
+Kepemilikan Bob   = 50%
+```
+
+**Langkah 3 — Swap terjadi: pengguna menukar 200 XLM lewat bin -1**
+```
+Fee dari 200 XLM = 200 × 0,10% = 0,20 XLM total fee
+LP portion (80%) = 0,16 XLM → masuk ke reserves bin -1
+Protocol (20%)   = 0,04 XLM → treasury
+```
+
+Setelah swap, bin -1 berisi:
+```
+Sebelum: 200 TESTUSD + 0 XLM
+Setelah: 0 TESTUSD + (XLM dari swap) + 0,16 XLM (fee LP)
+```
+
+**Langkah 4 — Alice melakukan Remove Liquidity (klaim fee):**
+```
+Alice punya 50% dari total shares
+Alice mendapat 50% dari semua reserves bin -1
+
+Contoh jika bin -1 akhirnya berisi 198 XLM (dari swap) + 0,16 XLM (fee):
+  → Alice menerima: 50% × 198,16 XLM = 99,08 XLM
+  
+Dibandingkan deposit awal Alice (100 TESTUSD ≈ 99,75 XLM di harga 0,9975):
+  → Perubahan nilai mencerminkan aktivitas swap + fee earned
+```
+
+**Kesimpulan:** Fee tidak pernah dibayarkan secara terpisah. Setiap swap yang melewati sebuah bin langsung **menambah nilai reserves** bin tersebut, sehingga LP shares menjadi lebih berharga. Cara "klaim" adalah dengan menarik likuiditas — kamu otomatis mendapat bagian dari seluruh reserves termasuk fee.
+
+---
+
+### Dynamic Fee — Perlindungan LP dari Volatilitas
+
+StellarBin menggunakan **dynamic fee** yang naik otomatis saat pasar sedang volatile:
+
+```
+Fee efektif = base_fee × (1 + volatility_multiplier)
+
+Contoh:
+  - Base fee: 0,10%
+  - Swap normal (pasar tenang): fee = 0,10%
+  - Swap saat volatilitas tinggi: fee bisa naik ke 0,30% – 0,50%
+  - Fee kembali turun ke base seiring waktu (decay function)
+```
+
+**Mengapa ini penting?**
+- Saat harga bergerak cepat, **arbitrageur** (bot yang memanfaatkan selisih harga) biasanya "memangsa" LP
+- Dynamic fee membuat biaya lebih mahal bagi arbitrageur saat volatilitas tinggi
+- LP mendapat fee lebih besar justru di momen paling berisiko
+- Trader normal tidak terkena dampak karena mereka jarang swap saat volatilitas ekstrem
+
+---
+
+### Perbandingan DLMM vs AMM Konvensional
+
+| Aspek | AMM Konvensional (x·y=k) | DLMM StellarBin |
+|---|---|---|
+| Distribusi likuiditas | Tersebar merata di semua harga (0 hingga ∞) | Terkonsentrasi di rentang bin yang dipilih LP |
+| Efisiensi modal | Rendah — 99% likuiditas "tidur" | Tinggi — semua modal berada di harga aktif |
+| Fee | Tetap (flat) | Dinamis, naik saat volatile |
+| Presisi harga | Kontinu (infinite precision) | Diskrit (per bin, sangat sempit) |
+| Kompleksitas LP | Sederhana (satu transaksi) | Lebih fleksibel (pilih strategi & range) |
+| Anti-snipe | Tidak ada | Ya (Launch Pool dengan activation_ts) |
+
+---
+
+### Strategi Likuiditas (Pilihan LP)
+
+Saat menambah likuiditas di StellarBin, LP memilih **distribusi** token ke dalam beberapa bin sekaligus:
+
+```
+SPOT Strategy (merata):
+Bin: [-2][-1][ 0][+1][+2]
+Berat: [1] [1] [1] [1] [1]  ← sama rata
+
+CURVE Strategy (terkonsentrasi di tengah):
+Bin: [-2][-1][ 0][+1][+2]
+Berat: [1] [2] [3] [2] [1]  ← terbanyak di active bin
+
+BID-ASK Strategy (terkonsentrasi di ujung):
+Bin: [-2][-1][ 0][+1][+2]
+Berat: [3] [2] [1] [2] [3]  ← terbanyak di ujung range
+```
+
+Setiap strategi cocok untuk kondisi pasar yang berbeda — Spot untuk LP pasif, Curve untuk LP yang yakin harga stabil, Bid-Ask untuk yang ingin menangkap pergerakan besar.
+
+---
+
+---
+
 ## Glosarium Lengkap (A–Z)
 
 Kumpulan semua istilah teknis yang muncul di platform StellarBin, diurutkan alfabetis sebagai referensi cepat.
