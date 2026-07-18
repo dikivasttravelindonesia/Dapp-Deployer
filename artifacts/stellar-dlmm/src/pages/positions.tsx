@@ -168,7 +168,7 @@ export default function PositionsPage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Klik kartu posisi untuk melihat detail, distribusi bin, dan menutup posisi.
+            Click a position card to view details, bin distribution, and close the position.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -233,7 +233,7 @@ export default function PositionsPage() {
                       {(pos.shares ?? 0).toLocaleString("en", { maximumFractionDigits: 0 })} shares
                     </span>
                     <span className="flex items-center gap-1 group-hover:text-primary transition-colors">
-                      Lihat detail <ChevronRight className="w-3 h-3" />
+                      View details <ChevronRight className="w-3 h-3" />
                     </span>
                   </div>
                 </Card>
@@ -359,7 +359,7 @@ function PositionDetailSheet({
           {/* Current value breakdown */}
           <section>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Nilai Posisi Saat Ini
+              Current Position Value
             </h3>
             <div className="bg-secondary/30 border border-border rounded-lg overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -399,23 +399,23 @@ function PositionDetailSheet({
           {binStep > 0 && (
             <section>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                Detail Bin
+                Bin Details
               </h3>
               <div className="grid grid-cols-2 gap-2">
-                <InfoTile label="Harga Bin" value={binPrice !== null ? `${binPrice.toFixed(6)} ${tokenYSymbol}/${tokenXSymbol}` : "—"} />
-                <InfoTile label="Active Bin Saat Ini" value={`#${activeBinId}`} />
+                <InfoTile label="Bin Price" value={binPrice !== null ? `${binPrice.toFixed(6)} ${tokenYSymbol}/${tokenXSymbol}` : "—"} />
+                <InfoTile label="Current Active Bin" value={`#${activeBinId}`} />
                 <InfoTile label="Bin Step" value={`${binStep} bps (${(binStep / 100).toFixed(2)}%)`} />
-                <InfoTile label="Fee Pool" value={pool?.fee !== undefined ? `${pool.fee}%` : "—"} />
+                <InfoTile label="Pool Fee" value={pool?.fee !== undefined ? `${pool.fee}%` : "—"} />
               </div>
               {binPrice !== null && pool?.currentPrice !== undefined && (
                 <p className="text-[11px] text-muted-foreground mt-2 px-1">
-                  Harga live pool: <span className="font-mono font-medium text-foreground">{pool.currentPrice.toFixed(6)} {tokenYSymbol}/{tokenXSymbol}</span>.
+                  Live pool price: <span className="font-mono font-medium text-foreground">{pool.currentPrice.toFixed(6)} {tokenYSymbol}/{tokenXSymbol}</span>.
                   {" "}
                   {status === "active"
-                    ? "Bin kamu adalah active bin — transaksi swap saat ini melewati bin ini dan mengakumulasi fee ke reserves-mu."
+                    ? "Your bin is the active bin — swap transactions currently pass through this bin and accumulate fees in your reserves."
                     : status === "above"
-                    ? `Bin kamu berada di atas active bin — posisi ini hanya menyimpan ${tokenXSymbol} dan akan mengakumulasi fee ketika harga naik melewati bin ini.`
-                    : `Bin kamu berada di bawah active bin — posisi ini hanya menyimpan ${tokenYSymbol} dan akan mengakumulasi fee ketika harga turun melewati bin ini.`
+                    ? `Your bin is above the active bin — this position only holds ${tokenXSymbol} and will accumulate fees when the price rises through this bin.`
+                    : `Your bin is below the active bin — this position only holds ${tokenYSymbol} and will accumulate fees when the price drops through this bin.`
                   }
                 </p>
               )}
@@ -425,7 +425,7 @@ function PositionDetailSheet({
           {/* Bin distribution chart */}
           <section>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Distribusi Likuiditas Pool — Bin #{binId} Disorot
+              Pool Liquidity Distribution — Bin #{binId} Highlighted
             </h3>
             {binsLoading ? (
               <Skeleton className="h-[180px] w-full" />
@@ -482,19 +482,19 @@ function PositionDetailSheet({
               </div>
             ) : (
               <div className="h-[180px] flex items-center justify-center text-xs text-muted-foreground border border-border rounded-lg">
-                Data distribusi bin tidak tersedia
+                Bin distribution data unavailable
               </div>
             )}
             {bins && bins.length > 0 && (
               <div className="flex items-center gap-4 mt-1.5 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-sm bg-primary inline-block" /> {tokenXSymbol} (bin kamu)
+                  <span className="w-2 h-2 rounded-sm bg-primary inline-block" /> {tokenXSymbol} (your bin)
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-sm bg-accent inline-block" /> {tokenYSymbol} (bin kamu)
+                  <span className="w-2 h-2 rounded-sm bg-accent inline-block" /> {tokenYSymbol} (your bin)
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-sm bg-primary/25 inline-block" /> Bin lain
+                  <span className="w-2 h-2 rounded-sm bg-primary/25 inline-block" /> Other bins
                 </span>
               </div>
             )}
@@ -504,11 +504,11 @@ function PositionDetailSheet({
           {pool?.lpFeeBps !== undefined && pool?.protocolFeeBps !== undefined && (
             <section>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                Pembagian Fee Swap
+                Swap Fee Split
               </h3>
               <div className="bg-secondary/30 border border-border rounded-lg px-4 py-3 space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">LP (kamu &amp; penyedia likuiditas lain)</span>
+                  <span className="text-muted-foreground">LP (you &amp; other liquidity providers)</span>
                   <span className="font-semibold text-foreground">{(pool.lpFeeBps / 100).toFixed(1)}%</span>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden flex">
@@ -528,17 +528,16 @@ function PositionDetailSheet({
             <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
               <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <div className="space-y-1 text-xs">
-                <p className="font-semibold text-foreground">Tentang Menutup Posisi (Close Position)</p>
+                <p className="font-semibold text-foreground">About Closing a Position</p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Di DLMM, <strong className="text-foreground">tidak ada fungsi "claim fee" tersendiri</strong>.
-                  Fee swap yang melewati bin ini langsung ditambahkan ke reserves bin — artinya nilai LP shares kamu
-                  naik otomatis. Saat kamu <strong className="text-foreground">menutup posisi (remove liquidity)</strong>,
-                  kamu menerima kembali seluruh modal awal + semua fee yang terakumulasi, sesuai proporsi shares-mu.
+                  In DLMM, there is <strong className="text-foreground">no separate "claim fee" function</strong>.
+                  Swap fees passing through this bin are directly added to the bin reserves — your LP share value
+                  increases automatically. When you <strong className="text-foreground">close your position (remove liquidity)</strong>,
+                  you receive back your full principal + all accumulated fees, proportional to your share count.
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  <strong className="text-amber-400">⚠ P&amp;L vs deposit awal:</strong>{" "}
-                  Cost basis tidak disimpan di on-chain — kamu perlu membandingkan sendiri jumlah yang diterima
-                  saat close vs jumlah yang kamu deposit dulu.
+                  <strong className="text-amber-400">⚠ P&amp;L vs original deposit:</strong>{" "}
+                  Cost basis is not stored on-chain — you need to compare the amount received on close against what you originally deposited.
                 </p>
               </div>
             </div>
@@ -554,10 +553,10 @@ function PositionDetailSheet({
             data-testid="button-close-position"
           >
             <Sparkles className="w-4 h-4 mr-2" />
-            Close Position &amp; Klaim Fee
+            Close Position &amp; Claim Fees
           </Button>
           <p className="text-[10px] text-center text-muted-foreground">
-            Menarik 100% likuiditas dari Bin #{binId} — modal + semua fee yang terakumulasi dikembalikan
+            Withdraw 100% liquidity from Bin #{binId} — principal + all accumulated fees will be returned
           </p>
         </div>
       </SheetContent>
