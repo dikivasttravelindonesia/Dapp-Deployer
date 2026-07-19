@@ -114,33 +114,23 @@ function TokenPicker({
   disabledAddress?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [customMode, setCustomMode] = useState(
-    value.length > 0 && !KNOWN_TOKENS.some((t) => t.address === value)
-  );
-  const [customInput, setCustomInput] = useState(
-    customMode ? value : ""
-  );
+  const [customInput, setCustomInput] = useState("");
 
   const selectedToken = KNOWN_TOKENS.find((t) => t.address === value);
+  const isCustom = !selectedToken && value.length > 0;
   const displayLabel = selectedToken
     ? selectedToken.symbol
-    : value
+    : isCustom
     ? `Custom (${value.slice(0, 8)}…)`
     : "Select token";
 
   function handleSelectKnown(address: string) {
-    setCustomMode(false);
     setCustomInput("");
     onChange(address);
     setOpen(false);
   }
 
-  function handleSelectCustom() {
-    setCustomMode(true);
-    setOpen(false);
-  }
-
-  function handleCustomInputChange(raw: string) {
+  function handleCustomChange(raw: string) {
     setCustomInput(raw);
     onChange(raw.trim());
   }
@@ -165,7 +155,7 @@ function TokenPicker({
           <Command>
             <CommandInput placeholder="Search token…" />
             <CommandList>
-              <CommandEmpty>Token not found.</CommandEmpty>
+              <CommandEmpty>No token found.</CommandEmpty>
               <CommandGroup heading="Available tokens">
                 {KNOWN_TOKENS.map((token) => {
                   const isDisabled = token.address === disabledAddress;
@@ -181,9 +171,7 @@ function TokenPicker({
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4 shrink-0",
-                          value === token.address && !customMode
-                            ? "opacity-100"
-                            : "opacity-0"
+                          value === token.address ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <span className="font-semibold">{token.symbol}</span>
@@ -201,34 +189,41 @@ function TokenPicker({
                   );
                 })}
               </CommandGroup>
-              <CommandGroup heading="Custom token">
-                <CommandItem
-                  value="__custom__"
-                  onSelect={handleSelectCustom}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      customMode ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span>Enter contract address…</span>
-                </CommandItem>
-              </CommandGroup>
             </CommandList>
           </Command>
+
+          {/* Custom address input — always visible inside the popover */}
+          <div className="border-t border-border p-3 space-y-1.5">
+            <p className="text-xs text-muted-foreground font-medium">
+              Or paste a custom contract address
+            </p>
+            <Input
+              placeholder="C… SAC address"
+              value={customInput}
+              onChange={(e) => handleCustomChange(e.target.value)}
+              className="font-mono text-xs h-8"
+              data-testid={`${testId}-custom`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && customInput.trim().length > 0) {
+                  setOpen(false);
+                }
+              }}
+            />
+            {customInput.trim().length > 0 && (
+              <Button
+                size="sm"
+                className="w-full h-7 text-xs"
+                onClick={() => {
+                  onChange(customInput.trim());
+                  setOpen(false);
+                }}
+              >
+                Use this address
+              </Button>
+            )}
+          </div>
         </PopoverContent>
       </Popover>
-
-      {customMode && (
-        <Input
-          placeholder="C… Stellar asset contract (SAC) address"
-          value={customInput}
-          onChange={(e) => handleCustomInputChange(e.target.value)}
-          className="font-mono text-xs mt-1"
-          data-testid={`${testId}-custom`}
-        />
-      )}
 
       {value && (
         <p className="text-[10px] font-mono text-muted-foreground truncate">
