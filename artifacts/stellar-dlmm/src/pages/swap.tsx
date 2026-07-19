@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useListPools, useGetPoolRecentSwaps } from "@workspace/api-client-react";
+import { useState, useEffect, useRef } from "react";
+import { listPools, useGetPoolRecentSwaps } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,7 @@ export default function SwapPage() {
   const [quotePending, setQuotePending] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [bestPoolId, setBestPoolId] = useState<number | null>(null);
+  const [poolsTriedCount, setPoolsTriedCount] = useState(0);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -57,31 +58,16 @@ export default function SwapPage() {
 
   const tokenInBalance = tokenIn ? getWalletTokenBalance(wallet, tokenIn.symbol) : null;
 
-  // Fetch all pools to find routing candidates
-  const { data: allPools } = useListPools();
   const recentSwapsPoolId = bestPoolId !== null ? `dlmm-${bestPoolId}` : DEFAULT_POOL_RECORD_ID;
   const { data: recentSwaps, isLoading: swapsLoading } = useGetPoolRecentSwaps(recentSwapsPoolId);
 
-  // DLMM pools that have non-zero reserve in the direction we need
-  const candidatePoolIds = useMemo(() => {
-    if (!allPools) return [DEFAULT_POOL_ID];
-    const dlmm = allPools.filter(
-      (p) =>
-        p.category === "dlmm" &&
-        p.dlmmPoolId !== undefined &&
-        // For x→y we need reserveY; for y→x we need reserveX
-        (xToY ? (p.reserveY ?? 0) > 0.0001 : (p.reserveX ?? 0) > 0.0001)
-    );
-    if (dlmm.length === 0) return [DEFAULT_POOL_ID];
-    return dlmm.map((p) => p.dlmmPoolId as number);
-  }, [allPools, xToY]);
-
-  // Debounced REAL on-chain quote — tries all candidate pools in parallel
+  // Debounced REAL on-chain quote — fetches fresh pool list then tries all DLMM pools in parallel
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setQuote(null);
     setQuoteError(null);
     setBestPoolId(null);
+    setPoolsTriedCount(0);
     if (!tokenInId || !tokenOutId || !amountIn || parseFloat(amountIn) <= 0) return;
 
     debounceRef.current = setTimeout(async () => {
@@ -89,9 +75,26 @@ export default function SwapPage() {
       try {
         const amountInStroops = displayToStroops(amountIn);
 
+        // Fetch fresh pool list inside the effect so routing never uses stale cache
+        const allPools = await listPools();
+        const candidatePoolIds = allPools
+          .filter(
+            (p) =>
+              p.category === "dlmm" &&
+              p.dlmmPoolId !== undefined &&
+              // For x→y (sell XLM, get TESTUSD) we need TESTUSD in pool (reserveY)
+              // For y→x (sell TESTUSD, get XLM) we need XLM in pool (reserveX)
+              (xToY ? (p.reserveY ?? 0) > 0.0001 : (p.reserveX ?? 0) > 0.0001)
+          )
+          .map((p) => p.dlmmPoolId as number);
+
+        // If no pool has the required reserve, still try DEFAULT_POOL_ID for a meaningful error
+        const poolsToTry = candidatePoolIds.length > 0 ? candidatePoolIds : [DEFAULT_POOL_ID];
+        setPoolsTriedCount(poolsToTry.length);
+
         // Try all candidate pools in parallel, pick the best output
         const results = await Promise.allSettled(
-          candidatePoolIds.map(async (poolId) => {
+          poolsToTry.map(async (poolId) => {
             const q = await getOnChainSwapQuote(xToY, amountInStroops, poolId);
             return { poolId, quote: q };
           })
@@ -125,7 +128,7 @@ export default function SwapPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [tokenInId, tokenOutId, amountIn, xToY, candidatePoolIds]);
+  }, [tokenInId, tokenOutId, amountIn, xToY]);
 
   function handleMaxAmount() {
     if (!tokenInBalance) return;
@@ -343,9 +346,9 @@ export default function SwapPage() {
                 </span>
                 <span className="font-mono tabular-nums text-primary font-medium">
                   Pool #{bestPoolId}
-                  {candidatePoolIds.length > 1 && (
+                  {poolsTriedCount > 1 && (
                     <span className="text-muted-foreground font-normal ml-1">
-                      (best of {candidatePoolIds.length})
+                      (best of {poolsTriedCount})
                     </span>
                   )}
                 </span>
