@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- \":(top)artifacts/api-server\" \":(top)artifacts/stellar-dlmm\" \":(top)lib\" \":(top)pnpm-workspace.yaml\" \":(top)pnpm-lock.yaml\" && exit 1 || exit 0",
+  "ignoreCommand": "exit 0",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/stellar-dlmm run build && rm -rf artifacts/api-server/public && cp -r artifacts/stellar-dlmm/dist/public artifacts/api-server/public",
   "outputDirectory": "public",
